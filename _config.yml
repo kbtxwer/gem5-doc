@@ -1,8 +1,7 @@
 # Site Settings
 title: gem5
 sourceurl: "https://gem5.googlesource.com/public/gem5-website/+/refs/heads/stable/README.md"
-url: "https://www.gem5.org/"
-baseurl: "/blog"
+url: "https://kbtxwer.gitee.io/gem5-doc"
 defaults:
   -
     scope:
@@ -15,6 +14,9 @@ sass:
   sass_dir: _sass
 
 include: ['_pages']
+
+site:
+  baseurl: "https://kbtxwer.gitee.io/gem5-doc"
 
 kramdown:
   input: GFM
