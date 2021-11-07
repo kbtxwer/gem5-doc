@@ -2,7 +2,7 @@
 title: gem5
 sourceurl: "https://gem5.googlesource.com/public/gem5-website/+/refs/heads/stable/README.md"
 url: "https://www.gem5.org/"
-
+baseurl: "/blog"
 defaults:
   -
     scope:
