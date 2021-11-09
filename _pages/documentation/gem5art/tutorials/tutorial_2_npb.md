@@ -642,7 +642,7 @@ User can also query the database using the methods discussed in the [Artifacts](
 
 The status of working of the NAS parallel benchmarks on gem5 based on the results from the experiments of this tutorial is following:
 
-![](/assets/img/gem5art//npb_X86KvmCPU_MESI_Two_Level.svg)
-![](/assets/img/gem5art//npb_TimingSimpleCPU_MESI_Two_Level.svg)
+![](../../../assets/img/gem5art//npb_X86KvmCPU_MESI_Two_Level.svg)
+![](../../../assets/img/gem5art//npb_TimingSimpleCPU_MESI_Two_Level.svg)
 
 You can look [here](https://www.gem5.org/documentation/benchmark_status/gem5-20) for the latest status of these tests on gem5.

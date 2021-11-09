@@ -202,7 +202,7 @@ simple/Throttle.cc. The flow-control is implemented by monitoring the
 available buffers and available bandwidth in output links before
 sending.
 
-![Simple_network.jpg](/assets/img/Simple_network.jpg "Simple_network.jpg")
+![Simple_network.jpg](../../../assets/img/Simple_network.jpg "Simple_network.jpg")
 
 
 ### Garnet2.0

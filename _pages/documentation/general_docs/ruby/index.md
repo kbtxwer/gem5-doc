@@ -27,7 +27,7 @@ highly configurable. Three key aspects of these models are:
 
 The following picture, taken from the GEMS tutorial in ISCA 2005, shows
 a high-level view of the main components in Ruby.
-![ruby_overview.jpg](/assets/img/Ruby_overview.jpg)
+![ruby_overview.jpg](../../../assets/img/Ruby_overview.jpg)
 
 For a tutorial-based approach to Ruby see [Part III of Learning gem5](/documentation/learning_gem5/part3/)
 
@@ -48,7 +48,7 @@ ports of the inter-connection network and queues the output at the
 output ports of the network, thus tying together the cache / memory
 controllers with the inter-connection network itself.
 
-![slicc_overview.jpg](/assets/img/Slicc_overview.jpg)
+![slicc_overview.jpg](../../../assets/img/Slicc_overview.jpg)
 
 The following cache coherence protocols are supported:
 

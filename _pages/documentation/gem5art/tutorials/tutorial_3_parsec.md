@@ -535,15 +535,15 @@ User can also query the database using the methods discussed in the [Artifacts](
 
 Here is the status of each workload after simulation:
 
-![WorkingStatusKVM](/assets/img/gem5art//WorkingStatusKVM.png)
-![WorkingStatusTiming](/assets/img/gem5art//WorkingStatusTiming.png)
+![WorkingStatusKVM](../../../assets/img/gem5art//WorkingStatusKVM.png)
+![WorkingStatusTiming](../../../assets/img/gem5art//WorkingStatusTiming.png)
 
 Below are the simulation time for KVM and TimingSimple cpu models.
 
-![SimTimeKVM](/assets/img/gem5art//SimTimeKVM.png)
-![SimTimeTiming](/assets/img/gem5art//SimTimeTiming.png)
+![SimTimeKVM](../../../assets/img/gem5art//SimTimeKVM.png)
+![SimTimeTiming](../../../assets/img/gem5art//SimTimeTiming.png)
 
 The number of instructions run on each cpu model is shown below:
 
-![InstCountKVM](/assets/img/gem5art//InstCountKVM.png)
-![InstCountTiming](/assets/img/gem5art//InstCountTiming.png)
+![InstCountKVM](../../../assets/img/gem5art//InstCountKVM.png)
+![InstCountTiming](../../../assets/img/gem5art//InstCountTiming.png)

@@ -12,7 +12,7 @@ This page contains information about different types of information visualizatio
 ## O3 Pipeline Viewer
 The o3 pipeline viewer is a text based viewer of the out-of-order CPU pipeline. It shows when instructions are fetched (f), decoded (d), renamed (n), dispatched (p), issued (i), completed (c), and retired (r). It is very useful for understanding where the pipeline is stalling or squashing in a reasonable small sequence of code. Next to the colorized viewer that wraps around is the tick the current instruction retired, the pc of that instruction, it's disassembly, and the o3 sequence number for that instruction.
 
-![o3pipeviewer](/assets/img/O3pipeview.png)
+![o3pipeviewer](../../../assets/img/O3pipeview.png)
 
 To generate output line you see above you first need to run an experiment with the o3 cpu:
 

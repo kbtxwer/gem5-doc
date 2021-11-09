@@ -519,11 +519,11 @@ for linux in linuxes:
 
 Following plots show the status of linux booting based on the results of the experiments of this tutorial:
 
-![](/assets/img/gem5art//boot_exit_classic_init.svg)
-![](/assets/img/gem5art//boot_exit_classic_systemd.svg)
-![](/assets/img/gem5art//boot_exit_MI_example_init.svg)
-![](/assets/img/gem5art//boot_exit_MI_example_systemd.svg)
-![](/assets/img/gem5art//boot_exit_MESI_Two_Level_init.svg)
-![](/assets/img/gem5art//boot_exit_MESI_Two_Level_systemd.svg)
+![](../../../assets/img/gem5art//boot_exit_classic_init.svg)
+![](../../../assets/img/gem5art//boot_exit_classic_systemd.svg)
+![](../../../assets/img/gem5art//boot_exit_MI_example_init.svg)
+![](../../../assets/img/gem5art//boot_exit_MI_example_systemd.svg)
+![](../../../assets/img/gem5art//boot_exit_MESI_Two_Level_init.svg)
+![](../../../assets/img/gem5art//boot_exit_MESI_Two_Level_systemd.svg)
 
 You can look [here](https://www.gem5.org/documentation/benchmark_status/gem5-20) for the latest status of these tests on gem5.

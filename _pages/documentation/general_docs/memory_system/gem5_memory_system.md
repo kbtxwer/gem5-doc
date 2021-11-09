@@ -28,7 +28,7 @@ hierarchy. Data flow is initiated on master port while the response messages
 and snoop queries appear on the slave port.
 
 
-![Simulation Object hierarchy of the model](/assets/img/gem5_MS_Fig1.PNG)
+![Simulation Object hierarchy of the model](../../../assets/img/gem5_MS_Fig1.PNG)
 
 
 ## CPU
@@ -36,7 +36,7 @@ and snoop queries appear on the slave port.
 Data [Cache](http://doxygen.gem5.org/release/current/classcache.html) object
 implements a standard cache structure:
 
-![DCache Simulation Objet](/assets/img/gem5_MS_Fig2.PNG)
+![DCache Simulation Objet](../../../assets/img/gem5_MS_Fig2.PNG)
 
 It is not in the scope of this document to describe O3 CPU model in details, so
 here are only a few relevant notes about the model:
@@ -140,7 +140,7 @@ WriteBuffer queue holds the following memory requests:
 * Uncached writes.
 * Writeback from evicted (& dirty) cache lines.
 
-![MSHR and Write Buffer Blocks](/assets/img/gem5_MS_Fig3.PNG)
+![MSHR and Write Buffer Blocks](../../../assets/img/gem5_MS_Fig3.PNG)
 
 Each memory request is assigned to corresponding [MSHR](
 http://doxygen.gem5.org/release/current/classMSHR.html) object (READ or WRITE on
@@ -196,7 +196,7 @@ before Read#8.
 ## Coherent Bus Object
 
 
-![Coherent Bus Object](/assets/img/gem5_MS_Fig4.PNG)
+![Coherent Bus Object](../../../assets/img/gem5_MS_Fig4.PNG)
 
 
 Coherent Bus object provides basic support for snoop protocol:
@@ -242,11 +242,11 @@ Reply message is sent after a configurable period of time .
 The following diagram shows read access that hits Data Cache line with Valid
 and Read flags:
 
-![Read Hit(Read flag must be set in cache line)](/assets/img/gem5_MS_Fig5.PNG)
+![Read Hit(Read flag must be set in cache line)](../../../assets/img/gem5_MS_Fig5.PNG)
 
 Cache miss read access will generate the following sequence of messages:
 
-![Read Miss with snoop reply](/assets/img/gem5_MS_Fig6.PNG)
+![Read Miss with snoop reply](../../../assets/img/gem5_MS_Fig6.PNG)
 
 Note that bus object never gets response from both DCache2 and Memory object.
 It sends the very same ReadReq package (message) object to memory and data
@@ -258,16 +258,16 @@ with MEM_INHIBIT flag that tells Memory object not to process the message.
 The following diagram shows write access that hits DCache1 cache line with
 Valid & Write flags:
 
-![Write Hit (with Write flag set in cache line)](/assets/img/gem5_MS_Fig7.PNG)
+![Write Hit (with Write flag set in cache line)](../../../assets/img/gem5_MS_Fig7.PNG)
 
 Next figure shows write access that hits DCache1 cache line with Valid but no
 Write flags – which qualifies as write miss. DCache1 issues UpgradeReq to
 obtain write permission. DCache2::snoopTiming will invalidate cache line that
 has been hit. Note that UpgradeResp message doesn’t carry data.
 
-![Write Miss – matching tag with no Write flag](/assets/img/gem5_MS_Fig8.PNG)
+![Write Miss – matching tag with no Write flag](../../../assets/img/gem5_MS_Fig8.PNG)
 
 The next diagram shows write miss in DCache. ReadExReq invalidates cache line
 in DCache2. ReadExResp carries the content of memory cache line.
 
-![Miss - no matching tag](/assets/img/gem5_MS_Fig9.PNG)
+![Miss - no matching tag](../../../assets/img/gem5_MS_Fig9.PNG)

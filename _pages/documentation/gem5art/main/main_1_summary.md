@@ -31,7 +31,7 @@ This can be intimidating for new users, and it can be difficult to manage even f
 As an example, following is a diagram which shows the interaction that takes place among different components (artifacts) while running full-system experiments with gem5.
 
 
-![](/assets/img/gem5art/art.png)
+![](../../../assets/img/gem5art/art.png)
 <br>
 *Figure: Flowchart of gem5 full system mode use case*
 

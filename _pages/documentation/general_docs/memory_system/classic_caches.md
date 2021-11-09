@@ -33,7 +33,7 @@ snooping responses go horizontally and down the hierarchy (same route
 back). Normal snoops go horizontally and express snoops go up the cache
 hierarchy.
 
-![Bus Connections](/assets/img/Bus.png)
+![Bus Connections](../../../assets/img/Bus.png)
 
 ### Bridges
 
