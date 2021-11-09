@@ -35,8 +35,7 @@ The Trace CPU model plays back elastic traces, which are dependency and timing a
 
 **Trace generation and replay methodology**
 
-![Methodology block diagram showing elastic trace generation using O3 CPU and replay using Trace CPU
-](/assets/img/Etrace_methodology.jpg)
+![Methodology block diagram showing elastic trace generation using O3 CPU and replay using Trace CPU](../../../assets/img/Etrace_methodology.jpg)
 
 ## **Elastic Trace Generation**
 The Elastic Trace Probe Listener listens to Probe Points inserted in O3 CPU pipeline stages. It monitors each instruction and creates a dependency graph by recording data Read-After-Write dependencies and order dependencies between loads and stores. It writes the instruction fetch request trace and the elastic data memory request trace as two separate files as shown below.
