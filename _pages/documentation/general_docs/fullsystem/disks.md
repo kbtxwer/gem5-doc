@@ -27,7 +27,7 @@ permalink: documentation/general_docs/fullsystem/disks
 
 因为磁盘映像代表磁盘本身上的所有字节，所以它不仅仅包含一个文件系统。对于大多数系统上的硬盘驱动器，映像以分区表开始。表中的每个分区（通常只有一个）也在映像中。如果您想操作整个磁盘，您将使用整个映像，但如果您只想使用一个分区和/或其中的文件系统，则需要专门选择映像的那部分。Lostup 命令（在下面讨论）有一个 -o 选项，可以让您指定在镜像中的起始位置。
 
-<iframe src="//player.bilibili.com/player.html?aid=765429369&bvid=BV1Er4y1U7GC&cid=478233359&page=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
+<iframe src="//player.bilibili.com/player.html?aid=765429369&bvid=BV1Er4y1U7GC&cid=478233359&page=1" width="100%" height="750px" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
 
 
 
@@ -47,7 +47,7 @@ permalink: documentation/general_docs/fullsystem/disks
 mount -o loop,offset=32256 foo.img
 ```
 
-<iframe src="//player.bilibili.com/player.html?aid=850396008&bvid=BV1qL4y1t7fD&cid=478232343&page=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
+<iframe src="//player.bilibili.com/player.html?aid=850396008&bvid=BV1qL4y1t7fD&cid=478232343&page=1" width="100%" height="750px" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
 
 
 
