@@ -6,206 +6,158 @@ parent: fullsystem
 permalink: documentation/general_docs/fullsystem/disks
 ---
 
-# Creating disk images for full system mode
+# 为全系统模式创建磁盘映像
 
-In full-system mode, gem5 relies on a disk image with an installed operating system to run simulations.
-A disk device in gem5 gets its initial contents from disk image.
-The disk image file stores all the bytes present on the disk just as you would find them on an actual device.
-Some other systems also use disk images which are in more complicated formats and which provide compression, encryption, etc. gem5 currently only supports raw images, so if you have an image in one of those other formats, you'll have to convert it into a raw image before you can use it in a simulation.
-There are often tools available which can convert between the different formats.
+在全系统模式下，gem5 依赖于安装了操作系统的磁盘映像来运行模拟。gem5 中的磁盘设备从磁盘映像中获取其初始内容。磁盘映像文件存储磁盘上的每一个字节，就像您在实际设备上看到的一样。其他一些系统也使用更复杂格式的磁盘映像，并提供压缩、加密等功能。 gem5 目前仅支持原始映像，因此如果您有其他格式之一的映像，则必须将其转换为原始镜像，然后才能在模拟中使用它。通常有可用的工具可以在不同的格式之间进行转换。
 
-There are multiple ways of creating a disk image which can be used with gem5.
-Following are four different methods to build disk images:
+有多种创建可以与 gem5 一起使用的磁盘映像的方法。以下是构建磁盘映像的四种不同方法：
 
-- Using gem5 utils to create a disk image
-- Using gem5 utils and chroot to create a disk image
-- Using QEMU to create a disk image
-- Using Packer to create a disk image
+- 使用 gem5 utils 创建磁盘映像
+- 使用 gem5 utils 和 chroot 创建磁盘映像
+- 使用 QEMU 创建磁盘映像
+- 使用 Packer 创建磁盘映像
 
-All of these methods are independent of each other.
-Next, we will discuss each of these methods one by one.
+所有这些方法都是相互独立的。接下来，我们将一一讨论这些方法。
 
-## 1) Using gem5 utils to create a disk image
-
-```md
-Disclaimer: This is from the old website and some of the stuff in this method can be out-dated.
+## 1) 使用 gem5 utils 创建磁盘映像
 
 ```
-Because a disk image represents all the bytes on the disk itself, it contains more than just a file system.
-For hard drives on most systems, the image starts with a partition table.
-Each of the partitions in the table (frequently only one) is also in the image.
-If you want to manipulate the entire disk you'll use the entire image, but if you want to work with just one partition and/or the file system on it, you'll need to specifically select that part of the image.
-The losetup command (discussed below) has a -o option which lets you specify where to start in an image.
+声明: 这是从旧网站搬运的，其中有些内容可能已经过时。
+```
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/Oh3NK12fnbg" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe><div class='thumbcaption'>A youtube video of working with image files using qemu on Ubuntu 12.04 64bit. Video resolution can be set to 1080</div>
+因为磁盘映像代表磁盘本身上的所有字节，所以它不仅仅包含一个文件系统。对于大多数系统上的硬盘驱动器，映像以分区表开始。表中的每个分区（通常只有一个）也在映像中。如果您想操作整个磁盘，您将使用整个映像，但如果您只想使用一个分区和/或其中的文件系统，则需要专门选择映像的那部分。Lostup 命令（在下面讨论）有一个 -o 选项，可以让您指定在镜像中的起始位置。
+
+<iframe src="//player.bilibili.com/player.html?aid=765429369&bvid=BV1Er4y1U7GC&cid=478233359&page=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
 
 
-### Creating an empty image
 
-You can use the ./util/gem5img.py script provided with gem5 to build the disk image.
-It's a good idea to understand how to build an image in case something goes wrong or you need to do something in an unusual way.
-However, in this mehtod, we are using gem5img.py script to go through the process of building and formatting an image.
-If you want to understand the guts of what it's doing see below.
-Running gem5img.py may require you to enter the sudo password.
-*You should never run commands as the root user that you don't understand! You should look at the file util/gem5img.py and ensure that it isn't going to do anything malicious to your computer!*
+在 Ubuntu 12.04 64 位上使用 qemu 处理图像文件的视频。视频分辨率可设置为1080
 
-You can use the "init" option with gem5img.py to create an empty image, "new", "partition", or "format" to perform those parts of init independently, and "mount" or "umount" to mount or unmount an existing image.
+### 创建一个空镜像
 
-### Mounting an image
+您可以使用 gem5 提供的 ./util/gem5img.py 脚本来构建磁盘映像。为避免出现问题，或您需要以不寻常的方式做某事，了解如何构建映像是个好主意。然而，在这个方法中，我们使用 gem5img.py 脚本来完成构建和格式化镜像的过程。如果你想了解它所做的事情的本质，请参见下文。运行 gem5img.py 可能需要您输入 sudo 密码。 *您永远不应该以您不理解的 root 用户身份运行命令！您应该查看文件 util/gem5img.py 并确保它不会对您的计算机进行任何恶意操作！*
 
-To mount a file system on your image file, first find a loopback device and attach it to your image with an appropriate offset as will be described further in the [Formatting](#formatting) section.
+您可以使用 gem5img.py 的“init”选项来创建一个空映像，“new”、“partition”或“format”来独立执行这些初始化步骤，并使用“mount”或“umount”来安装或卸载现有的映像。
 
-```sh
+### 挂载镜像
+
+要在您的映像文件上安装文件系统，首先要找到一个环回设备并将它以适当的偏移量附加到您的映像，这将在[格式化](#formatting)部分进一步描述。
+
+```
 mount -o loop,offset=32256 foo.img
 ```
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/OXH1oxQbuHA" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe><div class='thumbcaption'>A youtube video of add file using mount on Ubuntu 12.04 64bit. Video resolution can be set to 1080</div>
+<iframe src="//player.bilibili.com/player.html?aid=850396008&bvid=BV1qL4y1t7fD&cid=478232343&page=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
 
-### Unmounting
 
-To unmount an image, use the umount command like you normally would.
 
-```sh
+在 Ubuntu 12.04 64bit 上使用 mount 添加文件的视频。视频分辨率可设置为1080
+
+### 卸载
+
+要卸载映像，请像往常一样使用 umount 命令。
+
+```
 umount
 ```
 
-### Image Contents
+### 映像内容
 
-Now that you can create an image file and mount it's file system, you'll want to actually put some files in it.
-You're free to use whatever files you want, but the gem5 developers have found that Gentoo stage3 tarballs are a great starting point.
-They're essentially an almost bootable and fairly minimal Linux installation and are available for a number of architectures.
+现在您可以创建一个映像文件并挂载它的文件系统，您实际上需要将一些文件放入其中。你可以随意使用任何你想要的文件，但是 gem5 开发人员发现 Gentoo stage3 tarball 是一个很好的起点。它们本质上是一个几乎可引导且相当小的 Linux 安装包，可用于多种架构。
 
-If you choose to use a Gentoo tarball, first extract it into your mounted image.
-The /etc/fstab file will have placeholder entries for the root, boot, and swap devices.
-You'll want to update this file as apporpriate, deleting any entries you aren't going to use (the boot partition, for instance).
-Next, you'll want to modify the inittab file so that it uses the m5 utility program (described elsewhere) to read in the init script provided by the host machine and to run that.
-If you allow the normal init scripts to run, the workload you're interested in may take much longer to get started, you'll have no way to inject your own init script to dynamically control what benchmarks are started, for instance, and you'll have to interact with the simulation through a simulated terminal which introduces non-determinism.
+如果您选择使用 Gentoo tarball，请首先将其解压缩到您安装的镜像中。/etc/fstab 文件将包含根、引导和交换设备的占位符条目。您需要适当地更新此文件，删除您不打算使用的所有条目（例如，引导分区）。接下来，您需要修改 inittab 文件，以便它使用 m5 实用程序（在别处描述）读取主机提供的 init 脚本并运行它。如果您允许运行普通的 init 脚本，您感兴趣的工作负载可能需要更长的时间才能启动，例如，您将无法注入自己的 init 脚本来动态控制启动的基准测试，并且您必须使用引入不确定性的虚拟终端才能与模拟过程交互。
 
-#### Modifications
+#### 修改
 
-By default gem5 does not store modifications to the disk back to the underlying image file.
-Any changes you make will be stored in an intermediate COW layer and thrown away at the end of the simulation.
-You can turn off the COW layer if you want to modify the underlying disk.
+默认情况下，gem5 不会将磁盘修改存储回底层映像文件。您所做的任何更改都将存储在中间 COW 层中，并在模拟结束时丢弃。如果要修改底层磁盘，可以关闭 COW 层。
 
-#### Kernel and bootloader
+#### 内核和引导加载程序
 
-Also, generally speaking, gem5 skips over the bootloader portion of boot and loads the kernel into simulated memory itself. This means that there's no need to install a bootloader like grub to your disk image, and that you don't have to put the kernel you're going to boot from on the image either.
-The kernel is provided separately and can be changed out easily without having to modify the disk image.
+此外，一般来说，gem5 跳过引导的引导加载程序部分并将内核加载到模拟内存中。这意味着不需要将 grub 之类的引导加载程序安装到您的磁盘映像中，并且您也不必把要运行的内核写入映像。内核是单独提供的，无需修改磁盘映像即可轻松更改。
 
-### Manipulating images with loopback devices
+### 使用环回设备操作映像
 
-#### Loopback devices
+#### 环回设备
 
-Linux supports loopback devices which are devices backed by files.
-By attaching one of these to your disk image, you can use standard Linux commands on it which normally run on real disk devices.
-You can use the mount command with the "loop" option to set up a loopback device and mount it somewhere.
-Unfortunately you can't specify an offset into the image, so that would only be useful for a file system image, not a disk image which is what you need.
-You can, however, use the lower level losetup command to set up a loopback device yourself and supply the proper offset.
-Once you've done that, you can use the mount command on it like you would on a disk partition, format it, etc.
-If you don't supply an offset the loopback device will refer to the whole image, and you can use your favorite program to set up the partitions on it.
+Linux 支持环回设备，这些设备是由文件支持的。将某个loopback文件关联到您的磁盘映像后，您可以对该文件使用在真实磁盘设备上运行的标准 Linux 命令。您可以使用带有“loop”选项的 mount 命令来设置环回设备并将其挂载到某处。不幸的是，您无法指定映像的偏移量，因为这仅对文件系统映像有用，而不是您需要的磁盘映像。但是，您可以使用较低级别的 Lostup 命令自行设置环回设备并提供适当的偏移量。完成后，您可以像在磁盘分区上一样使用 mount 命令，对其进行格式化等。如果您不提供偏移量，回送设备将引用整个映像，您可以使用你最喜欢的程序来设置分区。
 
-### Working with image files
+### 处理映像文件
 
-To create an empty image from scratch, you'll need to create the file itself, partition it, and format (one of) the partition(s) with a file system.
+要从头开始创建一个空映像，您需要创建文件本身，对其进行分区，并使用文件系统格式化（其中一个）分区。
 
-####  Create the actual file
+#### 创建实际文件
 
-First, decide how large you want your image to be.
-It's a good idea to make it large enough to hold everything you know you'll need on it, plus some breathing room.
-If you find out later it's too small, you'll have to create a new larger image and move everything over.
-If you make it too big, you'll take up actual disk space unnecessarily and make the image harder to work with.
-Once you've decided on a size you'll want to actually create the file.
-Basically, all you need to do is create a file of a certain size that's full of zeros.
-One approach is to use the dd command to copy the right number of bytes from /dev/zero into the new file.
-Alternatively you could create the file, seek in it to the last byte, and write one zero byte.
-All of the space you skipped over will become part of the file and is defined to read as zeroes, but because you didn't explicitly write any data there, most file systems are smart enough to not actually store that to disk.
-You can create a large image that way but take up very little space on your physical disk.
-Once you start writing to the file later that will change, and also if you're not careful, copying the file may expand it to its full size.
+首先，确定您希望映像有多大。最好让它足够大，以容纳您已知所需的全部内容，以及一些冗余空间。如果您稍后发现它太小，则必须创建一个新的更大的映像并将所有内容移过去。如果你让它太大，你会不必要地占用实际的磁盘空间，并使映像更难处理。确定大小后，您将要实际创建文件。基本上，您需要做的就是创建一个特定大小且全是`0x00`的文件。一种方法是使用 dd 命令将正确数量的字节从 /dev/zero 复制到新文件中。或者，您可以创建文件，在其中查找到最后一个字节，然后写入一个零字节。您跳过的所有空间都将成为文件的一部分，并被定义为读取为零，但是因为您没有明确地在那里写入任何数据，大多数文件系统都足够智能，实际上不会将其存储到磁盘。您可以通过这种方式创建大映像，但只占用很少的物理磁盘空间。一旦您稍后开始写入文件，情况就会改变，而且如果您不小心，复制文件可能会将其扩展到完整大小。
 
-#### Partitioning
+#### 分区
 
-First, find an available loopback device using the losetup command with the -f option.
+首先，使用带 -f 选项的 Lostup 命令查找可用的环回设备。
 
-```sh
+```
 losetup -f
 ```
 
-Next, use losetup to attach that device to your image.
-If the available device was /dev/loop0 and your image is foo.img, you would use a command like this.
+接下来，使用 losstup 将该设备关联到您的映像。如果可用设备是 /dev/loop0 并且您的映像是 foo.img，您将使用这样的命令。
 
-```sh
+```
 losetup /dev/loop0 foo.img
 ```
 
-/dev/loop0 (or whatever other device you're using) will now refer to your entire image file.
-Use whatever partitioning program you like on it to set up one (or more) paritions.
-For simplicity it's probably a good idea to create only one parition that takes up the entire image.
-We say it takes up the entire image, but really it takes up all the space except for the partition table itself at the beginning of the file, and possibly some wasted space after that for DOS/bootloader compatibility.
+/dev/loop0（或您使用的任何其他设备）现在将引用您的整个映像文件。使用您喜欢的任何分区程序来设置一个（或多个）分区。为简单起见，最好只创建一个占据整个映像的分区。我们说它占用了整个映像，但实际上它占用了除文件开头的分区表本身之外的所有空间，并且可能在此之后浪费了一些空间以实现 DOS/引导加载程序兼容性。
 
-From now on we'll want to work with the new partition we created and not the whole disk, so we'll free up the loopback device using losetup's -d option
+从现在开始，我们将要使用我们创建的新分区而不是整个磁盘，因此我们将使用 Lostup 的 -d 选项释放环回设备
 
-```sh
+```
 losetup -d /dev/loop0
 ```
 
-#### Formatting
+#### 格式化
 
-First, find an available loopback device like we did in the partitioning step above using losetup's -f option.
+首先，像我们在上面的分区步骤中一样，使用 Lostup 的 -f 选项找到一个可用的环回设备。
 
-```sh
+```
 losetup -f
 ```
 
-We'll attach our image to that device again, but this time we only want to refer to the partition we're going to put a file system on.
-For PC and Alpha systems, that partition will typically be one track in, where one track is 63 sectors and each sector is 512 bytes, or 63 * 512 = 32256 bytes.
-The correct value for you may be different, depending on the geometry and layout of your image.
-In any case, you should set up the loopback device with the -o option so that it represents the partition you're interested in.
+我们将再次将我们的映像附加到该设备，但这次我们只想引用我们要放置文件系统的分区。对于 PC 和 Alpha 系统，该分区通常是一个磁道，其中一个磁道是 63 个扇区，每个扇区是 512 字节，或 63 * 512 = 32256 字节。您的正确值可能会有所不同，具体取决于映像的布局。在任何情况下，您都应该使用 -o 选项设置环回设备，使它代表您感兴趣的分区。
 
-```sh
+```bash
 losetup -o 32256 /dev/loop0 foo.img
 ```
 
-Next, use an appropriate formating command, often mke2fs, to put a file system on the partition.
+接下来，使用适当的格式化命令，通常是 mke2fs，将文件系统放在分区上。
 
-```sh
+```
 mke2fs /dev/loop0
 ```
 
-You've now successfully created an empty image file.
-You can leave the loopback device attached to it if you intend to keep working with it (likely since it's still empty) or clean it up using losetup -d.
+您现在已经成功创建了一个空的映像文件。如果您打算继续使用它（因为它仍然是空的），您可以持续让环回设备关联它，反之可以使用 Lostup -d 断开连接。
 
-```sh
+```
 losetup -d /dev/loop0
 ```
 
-Don't forget to clean up the loopback device attached to your image with the losetup -d command.
+不要忘记使用 lostup -d 命令清理关联到映像的环回设备。
 
-```sh
+```
 losetup -d /dev/loop0
 ```
 
-## 2) Using gem5 utils and chroot to create a disk image
+## 2) 使用 gem5 utils 和 chroot 创建磁盘映像
 
-The discussion in this section assumes that you have already checked out a version of gem5 and can build and run gem5 in full-system mode.
-We will use the x86 ISA for gem5 in this discussion, and this is mostly applicable to other ISAs as well.
+本节的讨论假设您已经签出 gem5 的一个版本，并且可以在全系统模式下构建和运行 gem5。我们将在本次讨论中为 gem5 使用 x86 ISA，这也基本适用于其他 ISA。
 
-### Creating a blank disk image
+### 创建空白磁盘映像
 
-The first step is to create a blank disk image (usually a .img file).
-This is similar to what we did in the first metod.
-We can use the gem5img.py script provided by gem5 developers.
-To create a blank disk image, which is formatted with ext2 by default, simply run the following.
+第一步是创建一个空白磁盘映像（通常是一个 .img 文件）。这类似于我们在第一种方法中所做的。我们可以使用 gem5 开发者提供的 gem5img.py 脚本。要创建默认为 ext2 格式的空白磁盘映像，只需运行以下命令。
 
 ```
 > util/gem5img.py init ubuntu-14.04.img 4096
 ```
 
-This command creates a new image, called "ubuntu-14.04.img" that is 4096 MB.
-This command may require you to enter the sudo password, if you don't have permission to create loopback devices.
-*You should never run commands as the root user that you don't understand! You should look at the file util/gem5img.py and ensure that it isn't going to do anything malicious to your computer!*
+此命令创建一个名为“ubuntu-14.04.img”的新映像，大小为 4096 MB。如果您没有创建环回设备的权限，此命令可能需要您输入 sudo 密码。 *您永远不应该以您不理解的 root 用户身份运行命令！您应该查看文件 util/gem5img.py 并确保它不会对您的计算机进行任何恶意操作！*
 
-We will be using util/gem5img.py heavily throughout this section, so you may want to understand it better.
-If you just run `util/gem5img.py`, it displays all of the possible commands.
+我们将在本节中大量使用 util/gem5img.py，因此您可能想更好地理解它。如果您只运行`util/gem5img.py`，它会显示所有可能的命令。
 
 ```
 Usage: %s [command] <command arguments>
@@ -221,14 +173,11 @@ losetup -d. Mounted images will belong to root, so you may need
 to use sudo to modify their contents
 ```
 
-### Copying root files to the disk
+### 将根文件复制到磁盘
 
-Now that we have created a blank disk, we need to populate it with all of the OS files.
-Ubuntu distributes a set of files explicitly for this purpose.
-You can find the [Ubuntu core](https://wiki.ubuntu.com/Core) distribution for 14.04 at <http://cdimage.ubuntu.com/releases/14.04/release/>. Since we are simulating an x86 machine, we will use `ubuntu-core-14.04-core-amd64.tar.gz`.
-Download whatever image is appropriate for the system you are simulating.
+现在我们已经创建了一个空白磁盘，我们需要用所有操作系统文件填充它。Ubuntu 为此明确分发了一组文件。您可以在http://cdimage.ubuntu.com/releases/14.04/release/ 找到14.04的 [Ubuntu 核心](https://wiki.ubuntu.com/Core)发行版。由于我们正在模拟 x86 机器，因此我们将使用`ubuntu-core-14.04-core-amd64.tar.gz`。 请下载适合您所模拟的系统的镜像。
 
-Next, we need to mount the blank disk and copy all of the files onto the disk.
+接下来，我们需要挂载空白磁盘并将所有文件复制到磁盘上。
 
 ```
 mkdir mnt
@@ -237,24 +186,21 @@ wget http://cdimage.ubuntu.com/ubuntu-core/releases/14.04/release/ubuntu-core-14
 sudo tar xzvf ubuntu-core-14.04-core-amd64.tar.gz -C mnt
 ```
 
-The next step is to copy a few required files from your working system onto the disk so we can chroot into the new disk. We need to copy `/etc/resolv.conf` onto the new disk.
+下一步是将一些需要的文件从您的工作系统复制到磁盘上，以便我们可以 chroot 到新磁盘中。我们需要复制`/etc/resolv.conf`到新磁盘上。
 
 ```
 sudo cp /etc/resolv.conf mnt/etc/
 ```
 
-### Setting up gem5-specific files
+### 设置 gem5 特定的文件
 
-#### Create a serial terminal
+#### 创建串行终端
 
-By default, gem5 uses the serial port to allow communication from the host system to the simulated system. To use this, we need to create a serial tty.
-Since Ubuntu uses upstart to control the init process, we need to add a file to /etc/init which will initialize our terminal.
-Also, in this file, we will add some code to detect if there was a script passed to the simulated system.
-If there is a script, we will execute the script instead of creating a terminal.
+默认情况下，gem5 使用串口来支持从主机系统到模拟系统的通信。要使用它，我们需要创建一个串行 tty。由于 Ubuntu 使用 upstart 来控制 init 进程，我们需要在 /etc/init 中添加一个文件来初始化我们的终端。此外，在此文件中，我们将添加一些代码来检测是否有脚本传递给模拟系统。如果有脚本，我们将执行脚本而不是创建终端。
 
-Put the following code into a file called /etc/init/tty-gem5.conf
+将以下代码放入名为 /etc/init/tty-gem5.conf 的文件中
 
-```
+```bash
 # ttyS0 - getty
 #
 # This service maintains a getty on ttyS0 from the point the system is
@@ -289,10 +235,9 @@ script
 end script
 ```
 
-#### Setup localhost
+#### 设置本地主机
 
-We also need to set up the localhost loopback device if we are going to use any applications that use it.
-To do this, we need to add the following to the `/etc/hosts` file.
+如果我们要使用任何使用它的应用程序，我们还需要设置本地主机环回设备。为此，我们需要将以下内容添加到`/etc/hosts`文件中。
 
 ```
 127.0.0.1 localhost
@@ -304,13 +249,13 @@ ff02::2 ip6-allrouters
 ff02::3 ip6-allhosts
 ```
 
-#### Update fstab
+#### 更新 fstab
 
-Next, we need to create an entry in `/etc/fstab` for each partition we want to be able to access from the simulated system. Only one partition is absolutely required (`/`); however, you may want to add additional partitions, like a swap partition.
+接下来，需要在`/etc/fstab`为每个希望能被模拟系统访问的分区创建一个条目。只有一个分区是绝对需要的（`/`）；但是，您可能希望添加其他分区，例如交换分区。
 
-The following should appear in the file `/etc/fstab`.
+以下内容应出现在文件中`/etc/fstab`。
 
-```
+```bash
 # /etc/fstab: static file system information.
 #
 # Use 'blkid' to print the universally unique identifier for a
@@ -321,24 +266,19 @@ The following should appear in the file `/etc/fstab`.
 /dev/hda1      /       ext3        noatime     0 1
 ```
 
-#### Copy the `m5` binary to the disk
+#### 将`m5`二进制文件复制到磁盘
 
-gem5 comes with an extra binary application that executes pseudo-instructions to allow the simulated system to interact with the host system.
-To build this binary, run `make -f Makefile.<isa>` in the `gem5/m5` directory, where `<isa>` is the ISA that you are simulating (e.g., x86). After this, you should have an `m5` binary file.
-Copy this file to /sbin on your newly created disk.
+gem5 带有一个额外的二进制应用程序，它执行伪指令以允许模拟系统与主机系统交互。要构建此二进制文件，请在`gem5/m5`目录下运行`make -f Makefile.<isa>`。其中`<isa>`表示您正在模拟的 ISA（例如 X86）。构建成功后，您应该得到一个`m5`二进制文件。将此文件复制到新创建的磁盘上的 /sbin。
 
-After updating the disk with all of the gem5-specific files, unless you are going on to add more applications or copying additional files, unmount the disk image.
+使用所有 gem5 特定文件更新磁盘后，除非您要添加更多应用程序或复制其他文件，否则请卸载磁盘映像。
 
 ```
 > util/gem5img.py umount mnt
 ```
 
-### Install new applications
+### 安装新应用
 
-The easiest way to install new applications on to your disk, is to use `chroot`.
-This program logically changes the root directory ("/") to a different directory, mnt in this case.
-Before you can change the root, you first have to set up the special directories in your new root. To do
-this, we use `mount -o bind`.
+在磁盘上安装新应用程序的最简单方法是使用`chroot`. 该程序在逻辑上将根目录（“/”）更改为不同的目录，在本例中为 mnt。在更改root目录之前，您首先必须在新root目录中设置一些特殊目录。为此，我们使用`mount -o bind`.
 
 ```
 > sudo /bin/mount -o bind /sys mnt/sys
@@ -346,24 +286,21 @@ this, we use `mount -o bind`.
 > sudo /bin/mount -o bind /proc mnt/proc
 ```
 
-After binding those directories, you can now `chroot`:
+绑定这些目录后，您现在可以`chroot`：
 
 ```
 > sudo /usr/sbin/chroot mnt /bin/bash
 ```
 
-At this point you will see a root prompt and you will be in the `/`
-directory of your new disk.
+此时，您将看到一个 root 提示，并且您将位于 新磁盘的`/`目录中。
 
-You should update your repository information.
+您应该更新您的存储库信息。
 
 ```
 > apt-get update
 ```
 
-You may want to add the universe repositories to your list with the
-following commands.
-Note: The first command is require in 14.04.
+您可能希望使用以下命令将 Universe 存储库添加到您的列表中。注意：第一个命令在 14.04 中是必需的。
 
 ```
 > apt-get install software-properties-common
@@ -371,11 +308,9 @@ Note: The first command is require in 14.04.
 > apt-get update
 ```
 
-Now, you are able to install any applications you could install on a
-native Ubuntu machine via `apt-get`.
+现在，您可以通过`apt-get`安装任何应用。
 
-Remember, after you exit you need to unmount all of the directories we
-used bind on.
+请记住，退出后，您需要卸载我们绑定的所有目录。
 
 ```
 > sudo /bin/umount mnt/sys
@@ -383,66 +318,52 @@ used bind on.
 > sudo /bin/umount mnt/dev
 ```
 
+## 3) 使用 QEMU 创建磁盘映像
 
-## 3) Using QEMU to create a disk image
-
-This method is a follow-up on the previous method to create a disk image.
-We will see how to create, edit and set up a disk image using qemu instead of relying on gem5 tools.
-This section assumes that you have installed qemu on your system.
-In Ubuntu, this can be done with
+此方法是上一个创建磁盘映像的方法的后续。我们将看到如何使用 qemu 而不是依赖 gem5 工具来创建、编辑和设置磁盘映像。本节假设您已经在系统上安装了 qemu。在 Ubuntu 中，这可以通过
 
 ```
 sudo apt-get install qemu-kvm libvirt-bin ubuntu-vm-builder bridge-utils
 ```
+实现
 
-### Step 1: Create an empty disk
-Using the qemu disk tools, create a blank raw disk image.
-In this case, I chose to create a disk named "ubuntu-test.img" that is 8GB.
+### 第 1 步：创建一个空磁盘
+
+使用 qemu 磁盘工具，创建一个空白的原始磁盘映像。在本例中，我选择创建一个名为“ubuntu-test.img”的 8GB 磁盘。
 
 ```
 qemu-img create ubuntu-test.img 8G
 ```
 
-### Step 2: Install ubuntu with qemu
-Now that we have a blank disk, we are going to use qemu to install Ubuntu on the disk.
-It is encouraged that you use the server version of Ubuntu since gem5 does not have great support for displays.
-Thus, the desktop environment isn't very useful.
+### 第二步：用qemu安装ubuntu
 
-First, you need to download the installation CD image from the [Ubuntu website](https://www.ubuntu.com/download/server).
+现在我们有一个空白磁盘，我们将使用 qemu 在磁盘上安装 Ubuntu。提倡您使用 Ubuntu 的服务器版本，因为 gem5 对显示没有很好的支持。因此，桌面环境不是很有用。
 
-Next, use qemu to boot off of the CD image, and set the disk in the system to be the blank disk you created above.
-Ubuntu needs at least 1GB of memory to install correctly, so be sure to configure qemu to use at least 1GB memory.
+首先，您需要从[Ubuntu 网站](https://www.ubuntu.com/download/server)下载安装 CD 映像。
+
+接下来，使用 qemu 从 CD 映像启动，并将系统中的磁盘设置为您在上面创建的空白磁盘。Ubuntu 至少需要 1GB 内存才能正确安装，所以一定要配置 qemu 至少使用 1GB 内存。
 
 ```
 qemu-system-x86_64 -hda ../gem5-fs-testing/ubuntu-test.img -cdrom ubuntu-16.04.1-server-amd64.iso -m 1024 -enable-kvm -boot d
 ```
 
-With this, you can simply follow the on-screen directions to install Ubuntu to the disk image.
-The only gotcha in the installation is that gem5's IDE drivers don't seem to play nicely with logical paritions.
-Thus, during the Ubuntu install, be sure to manually partition the disk and remove any logical partitions.
-You don't need any swap space on the disk anyway, unless you're doing something specifically with swap space.
+有了这个，您只需按照屏幕上的说明将 Ubuntu 安装到磁盘映像。安装中唯一的问题是 gem5 的 IDE 驱动程序似乎不能很好地与逻辑分区配合使用。因此，在 Ubuntu 安装期间，请务必手动对磁盘进行分区并删除所有【逻辑分区】。无论如何，您不需要磁盘上的任何交换空间，除非您专门使用交换空间做一些事情。
 
-### Step 3: Boot up and install needed software
+### 第 3 步：启动并安装所需的软件
 
-Once you have installed Ubuntu on the disk, quit qemu and remove the `-boot d` option so that you are not booting off of the CD anymore.
-Now, you can again boot off of the main disk image you have installed Ubuntu on.
+在磁盘上安装 Ubuntu 后，退出 qemu 并删除该`-boot d`选项，以便不再从 CD 启动。现在，您可以再次从安装了 Ubuntu 的主磁盘映像启动。
 
-Since we're using qemu, you should have a network connection (although [ping won't
-work](http://wiki.qemu.org/Documentation/Networking#User_Networking_.28SLIRP.29)).
-When booting in qemu, you can just use `sudo apt-get install` and
-install any software you need on your disk.
+由于我们使用的是 qemu，您应该有网络连接（尽管[ping 不起作用](http://wiki.qemu.org/Documentation/Networking#User_Networking_.28SLIRP.29)）。在 qemu 中启动时，您可以`sudo apt-get install`在磁盘上使用和安装您需要的任何软件。
 
 ```
 qemu-system-x86_64 -hda ../gem5-fs-testing/ubuntu-test.img -cdrom ubuntu-16.04.1-server-amd64.iso -m 1024 -enable-kvm
 ```
 
-### Step 4: Update init script
+### 第 4 步：更新初始化脚本
 
-By default, gem5 expects a modified init script which loads a script off of the host to execute in the guest.
-To use this feature, you need to follow the steps below.
+默认情况下，gem5 需要一个经过修改的 init 脚本，该脚本从宿主机加载脚本以在子系统中执行。要使用此功能，您需要按照以下步骤操作。
 
-Alternatively, you can install the precompiled binaries for x86 found on this [website](http://cs.wisc.edu/~powerjg/files/gem5-guest-tools-x86.tgz).
-From qemu, you can run the following, which completes the above steps for you.
+或者，您可以安装在此[网站](http://cs.wisc.edu/~powerjg/files/gem5-guest-tools-x86.tgz)上找到的适用于 x86 的预编译二进制文件。要从qemu配置，你可以运行下面的脚本，这就为你完成了上述步骤。
 
 ```
 wget http://cs.wisc.edu/~powerjg/files/gem5-guest-tools-x86.tgz
@@ -451,20 +372,20 @@ cd gem5-guest-tools/
 sudo ./install
 ```
 
-Now, you can use the `system.readfile` parameter in your Python config scripts. This file will automatically be loaded (by the `gem5init` script) and executed.
+现在，您可以在 Python 配置脚本中使用`system.readfile`参数。该文件将自动加载（由`gem5init`脚本）并执行。
 
-### Manually installing the gem5 init script
+### 手动安装 gem5 init 脚本
 
-First, build the m5 binary on the host.
+首先，在宿主机上构建 m5 二进制文件。
 
 ```
 cd util/m5
 make -f Makefile.x86
 ```
 
-Then, copy this binary to the guest and put it in `/sbin`. Also, create a link from `/sbin/gem5`.
+然后，将此二进制文件复制到客户机并放入`/sbin`，创建链接`/sbin/gem5`指向它.
 
-Then, to get the init script to execute when gem5 boots, create file /lib/systemd/system/gem5.service with the following:
+然后，要在 gem5 启动时执行 init 脚本，请使用以下内容创建文件 /lib/systemd/system/gem5.service：
 
 ```
 [Unit]
@@ -483,14 +404,13 @@ StandardError=tty
 WantedBy=default.target
 ```
 
-Enable the gem5 service and disable the ttyS0 service.
+启用 gem5 服务并禁用 ttyS0 服务。
 
 ```
 systemctl enable gem5.service
 ```
 
-Finally, create the init script that is executed by the service. In
-`/sbin/gem5init`:
+最后，创建由服务执行的 init 脚本。在 `/sbin/gem5init`：
 
 ```
 #!/bin/bash -
@@ -518,36 +438,35 @@ fi
 echo "No script found"
 ```
 
-### Problems and (some) solutions
+### 问题和（一些）解决方案
 
-You might run into some problems while following this method.
-Some of the issues and solutions are discussed on this [page](http://www.lowepower.com/jason/setting-up-gem5-full-system.html).
+在遵循此方法时，您可能会遇到一些问题。[本页](http://www.lowepower.com/jason/setting-up-gem5-full-system.html)讨论了一些问题和解决方案。
 
-## 4) Using Packer to create a disk image
+## 4) 使用 Packer 创建磁盘映像
 
-This section discusses an automated way of creating gem5-compatible disk images with Ubuntu server installed. We make use of packer to do this which makes use of a .json template file to build and configure a disk image. The template file could be configured to build a disk image with specific benchmarks installed. The mentioned template file can be found [here](/assets/files/packer_template.json).
+本节讨论在安装了 Ubuntu 服务器的情况下创建与 gem5 兼容的磁盘映像的自动化方法。我们使用 packer 来执行此操作，它使用 .json 模板文件来构建和配置磁盘映像。模板文件可以配置为构建一个安装了特定基准的磁盘映像。提到的模板文件可以在[这里](/assets/files/packer_template.json)找到。
 
+### 使用 Packer 构建简单的磁盘映像
 
-### Building a Simple Disk Image with Packer
+#### a.它是如何工作的，简要说明
 
-#### a. How It Works, Briefly
-We use [Packer](https://www.packer.io/) and [QEMU](https://www.qemu.org/) to automate the process of disk creation.
-Essentially, QEMU is responsible for setting up a virtual machine and all interactions with the disk image during the building process.
-The interactions include installing Ubuntu Server to the disk image, copying files from your machine to the disk image, and running scripts on the disk image after Ubuntu is installed.
-However, we will not use QEMU directly.
-Packer provides a simpler way to interact with QEMU using a JSON script, which is more expressive than using QEMU from command line.
+我们使用[Packer](https://www.packer.io/)和[QEMU](https://www.qemu.org/)来自动化磁盘创建过程。本质上，QEMU 负责设置虚拟机以及在构建过程中与磁盘映像的所有交互。交互包括将 Ubuntu Server 安装到磁盘映像，将文件从您的机器复制到磁盘映像，以及在安装 Ubuntu 后在磁盘映像上运行脚本。但是，我们不会直接使用 QEMU。Packer 提供了一种使用 JSON 脚本与 QEMU 交互的更简单方法，这比从命令行使用 QEMU 更具表现力。
 
-#### b. Install Required Software/Dependencies
-If not already installed, QEMU can be installed using:
-```shell
+#### b. 安装所需的软件/依赖项
+
+如果尚未安装，可以使用以下命令安装 QEMU：
+
+```
 sudo apt-get install qemu
 ```
-Download the Packer binary from [the official website](https://www.packer.io/downloads.html).
 
-#### c. Customize the Packer Script
-The default packer script `template.json` should be modified and adapted according to the required disk image and the avaiable resources for the build proces. We will rename the default template to `[disk-name].json`. The variables that should be modified appear at the end of `[disk-name].json` file, in `variables` section.
-The configuration files that are used to build the disk image, and the directory structure is shown below:
-```shell
+从[官方网站](https://www.packer.io/downloads.html)下载 Packer 二进制文件。
+
+#### c.自定义 Packer 脚本
+
+应根据所需的磁盘映像和构建过程的可用资源，修改和调整默认打包程序的`template.json`脚本。我们将默认模板重命名为`[disk-name].json`.应该修改的变量出现在`[disk-name].json`文件末尾的`variables`节中。用于构建磁盘映像的配置文件，其目录结构如下所示：
+
+```
 disk-image/
     [disk-name].json: packer script
     Any experiment-specific post installation script
@@ -555,32 +474,34 @@ disk-image/
     preseed.cfg: preseeded configuration to install Ubuntu
 ```
 
-##### i. Customizing the VM (Virtual Machine)
-In `[disk-name].json`, following variables are available to customize the VM:
+##### i. 自定义 VM（虚拟机）
 
-| Variable         | Purpose     | Example  |
-| ---------------- |-------------|----------|
-| [vm_cpus](https://www.packer.io/docs/builders/qemu.html#cpus) **(should be modified)** | number of host CPUs used by VM | "2": 2 CPUs are used by the VM |
-| [vm_memory](https://www.packer.io/docs/builders/qemu.html#memory) **(should be modified)**| amount of VM memory, in MB | "2048": 2 GB of RAM are used by the VM |
-| [vm_accelerator](https://www.packer.io/docs/builders/qemu.html#accelerator) **(should be modified)** | accelerator used by the VM e.g. Kvm | "kvm": kvm will be used |
+在 中`[disk-name].json`，以下变量可用于自定义 VM：
 
-<br />
+| 变量 | 用途 | 实例 |
+| ------------------------------------------------------------ | ------------------------- | ------------------------ |
+| [vm_cpus ](https://www.packer.io/docs/builders/qemu.html#cpus)**（应修改）** | VM 使用的主机 CPU 数量    | “2”：VM 使用 2 个 CPU    |
+| [vm_memory ](https://www.packer.io/docs/builders/qemu.html#memory)**（应修改）** | VM 内存量，以 MB 为单位   | “2048”：VM 使用 2 GB RAM |
+| [vm_accelerator ](https://www.packer.io/docs/builders/qemu.html#accelerator)**（应修改）** | VM 使用的加速器，例如 kvm | “kvm”：将使用 kvm        |
 
-##### ii. Customizing the Disk Image
-In `[disk-name].json`, disk image size can be customized using following variable:
 
-| Variable        | Purpose     | Example  |
-| ---------------- |-------------|----------|
-| [image_size](https://www.packer.io/docs/builders/qemu.html#disk_size) **(should be modified)** | size of the disk image, in megabytes | "8192": the image has the size of 8 GB  |
-| [image_name] | name of the built disk image | "boot-exit"  |
 
-<br />
+##### ii. 自定义磁盘映像
 
-##### iii. File Transfer
-While building a disk image, users would need to move their files (benchmarks, data sets etc.) to
-the disk image. In order to do this file transfer, in `[disk-name].json` under `provisioners`, you could add the following:
+在 中`[disk-name].json`，可以使用以下变量自定义磁盘映像大小：
 
-```shell
+|变量| 用途 | 实例 |
+| ------------------------------------------------------------ | ------------------------------ | ----------------------- |
+| [image_size ](https://www.packer.io/docs/builders/qemu.html#disk_size)**（应修改）** | 磁盘映像的大小，以兆字节为单位 | “8192”：映像大小为 8 GB |
+| [映像名称]                                                   | 构建的磁盘映像的名称           | “boot-exit”              |
+
+
+
+##### iii. 文件传输
+
+在构建磁盘映像时，用户需要将他们的文件（基准、数据集等）移动到磁盘映像。为了进行此文件传输，在`[disk-name].json`的`provisioners`下，您可以添加以下内容：
+
+```json
 {
     "type": "file",
     "source": "post_installation.sh",
@@ -588,37 +509,35 @@ the disk image. In order to do this file transfer, in `[disk-name].json` under `
     "direction": "upload"
 }
 ```
-The above example copies the file `post_installation.sh` from the host to `/home/gem5/` in the disk image.
-This method is also capable of copying a folder from host to the disk image and vice versa.
-It is important to note that the trailing slash affects the copying process [(more details)](https://www.packer.io/docs/provisioners/file.html#directory-uploads).
-The following are some notable examples of the effect of using slash at the end of the paths.
 
-| `source`        | `destination`     | `direction`  |  `Effect`  |
-| ---------------- |-------------|----------|-----|
-| `foo.txt` | `/home/gem5/bar.txt` | `upload` | copy file (host) to file (image) |
-| `foo.txt` | `bar/` | `upload` | copy file (host) to folder (image) |
-| `/foo` | `/tmp` | `upload` | `mkdir /tmp/foo` (image);  `cp -r /foo/* (host) /tmp/foo/ (image)`; |
-| `/foo/` | `/tmp` | `upload` | `cp -r /foo/* (host) /tmp/ (image)` |
+上面的示例将文件`post_installation.sh`从主机复制到`/home/gem5/`磁盘映像中。此方法还能够将文件夹从主机复制到磁盘映像，反之亦然。重要的是要注意尾部斜杠会影响复制过程[（更多详细信息）](https://www.packer.io/docs/provisioners/file.html#directory-uploads)。以下是在路径末尾使用斜杠的一些显着示例。
 
-If `direction` is `download`, the files will be copied from the image to the host.
+| `源`  | `目的`        | `方向` | `作用`                                                     |
+| --------- | -------------------- | ----------- | ------------------------------------------------------------ |
+| `foo.txt` | `/home/gem5/bar.txt` | `upload`    | 将文件（主机）复制到文件（映像）                             |
+| `foo.txt` | `bar/`               | `upload`    | 将文件（主机）复制到文件夹（映像）                           |
+| `/foo`    | `/tmp`               | `upload`    | `mkdir /tmp/foo(映像);` `cp -r /foo/* (主机) /tmp/foo/ (映像)`; |
+| `/foo/`   | `/tmp`               | `upload`    | `cp -r /foo/* (映像) /tmp/ (映像)`                          |
 
-**Note**: [This is a way to run script once after installing Ubuntu without copying to the disk image](#customizingscripts3).
+如果`方向`是`download`，则文件将从映像复制到主机。
 
-##### iv. Install Benchmark Dependencies
-To install the dependencies, you can use a bash script `post_installation.sh`, which will be run after the Ubuntu installation and file copying is done.
-For example, if we want to install `gfortran`, add the following in `post_installation.sh`:
-```shell
+**提示**：[这是一种在安装 Ubuntu 后运行脚本而不复制到磁盘映像的方法](#customizingscripts3)。
+
+##### iv.安装基准依赖项
+
+要安装依赖项，您可以使用 bash 脚本`post_installation.sh`，它将在 Ubuntu 安装和文件复制完成后运行。例如，如果我们要安装`gfortran`，请在 中添加以下内容`post_installation.sh`：
+
+```bash
 echo '12345' | sudo apt-get install gfortran;
 ```
-In the above example, we assume that the user password is `12345`.
-This is essentially a bash script that is executed on the VM after the file copying is done, you could modify the script as a bash script to fit any purpose.
 
-##### v. Running Other Scripts on Disk Image
-In `[disk-name].json`, we could add more scripts to `provisioners`.
-Note that the files are on the host, but the effects are on the disk image.
-For example, the following example runs `post_installation.sh` after Ubuntu is installed,
-{% raw %}
-```sh
+在上面的例子中，我们假设用户密码是`12345`。这本质上是一个 bash 脚本，在文件复制完成后在 VM 上执行，您可以将该脚本修改为 bash 脚本以适应任何目的。
+
+##### v. 在磁盘映像上运行其他脚本
+
+在`[disk-name].json`中，我们可以将更多脚本添加到`provisioners`. 请注意，文件在主机上，但作用在磁盘映像上。例如，下面的例子`post_installation.sh`在安装 Ubuntu 后运行，
+
+```json
 {
     "type": "shell",
     "execute_command": "echo '{{ user `ssh_password` }}' | {{.Vars}} sudo -E -S bash '{{.Path}}'",
@@ -628,35 +547,33 @@ For example, the following example runs `post_installation.sh` after Ubuntu is i
     ]
 }
 ```
-{% endraw %}
 
-#### d. Build the Disk Image
+#### d. 构建磁盘映像
 
-##### i. Build
-In order to build a disk image, the template file is first validated using:
-```sh
+##### i.构建
+
+为了构建磁盘映像，首先使用以下方法验证模板文件：
+
+```
 ./packer validate [disk-name].json
 ```
-Then, the template file can be used to build the disk image:
-```sh
+
+然后，模板文件可用于构建磁盘映像：
+
+```
 ./packer build [disk-name].json
 ```
 
-On a fairly recent machine, the building process should not take more than 15 minutes to complete.
-The disk image with the user-defined name (image_name) will be produced in a folder called [image_name]-image.
-[We recommend to use a VNC viewer in order to inspect the building process](#inspect).
+在相当新的机器上，构建过程不应超过 15 分钟就能完成。具有用户定义名称 (image_name) 的磁盘映像将在名为 [image_name]-image 的文件夹中生成。 [我们建议使用 VNC 查看器来检查构建过程](#inspect)。
 
-##### ii. Inspect the Building Process
-While the building of disk image takes place, Packer will run a VNC (Virtual Network Computing) server and you will be able to see the building process by connecting to the VNC server from a VNC client. There are a plenty of choices for VNC client. When you run the Packer script, it will tell you which port is used by the VNC server. For example, if it says `qemu: Connecting to VM via VNC (127.0.0.1:5932)`, the VNC port is 5932.
-To connect to VNC server from the VNC client, use the address `127.0.0.1:5932` for a port number 5932.
-If you need port forwarding to forward the VNC port from a remote machine to your local machine, use SSH tunneling
-```shell
+##### ii. 检查构建过程
+
+在构建磁盘映像时，Packer 将运行 VNC（虚拟网络计算）服务器，您将能够通过从 VNC 客户端连接到 VNC 服务器来查看构建过程。VNC 客户端有很多选择。当您运行 Packer 脚本时，它会告诉您 VNC 服务器使用哪个端口。例如，如果显示`qemu: Connecting to VM via VNC (127.0.0.1:5932)`，则 VNC 端口为 5932。要从 VNC 客户端连接到 VNC 服务器，请使用`127.0.0.1:5932`端口号 5932的地址。如果您需要端口转发以将 VNC 端口从远程机器转发到本地机器, 使用 SSH 隧道
+
+```
 ssh -L 5932:127.0.0.1:5932 <username>@<host>
 ```
-This command will forward port 5932 from the host machine to your machine, and then you will be able to connect to the VNC server using the address `127.0.0.1:5932` from your VNC viewer.
 
-**Note**: While Packer is installing Ubuntu, the terminal screen will display "waiting for SSH" without any update for a long time.
-This is not an indicator of whether the Ubuntu installation produces any errors.
-Therefore, we strongly recommend using VNC viewer at least once to inspect the image building process.
+此命令会将端口 5932 从主机转发到您的机器，然后您将能够使用`127.0.0.1:5932`VNC 查看器中的地址连接到 VNC 服务器。
 
-
+**注意**：Packer 在安装 Ubuntu 时，终端屏幕会显示“waiting for SSH”，长时间没有任何更新。这不是 Ubuntu 安装是否产生任何错误的指标。因此，我们强烈建议至少使用一次 VNC 查看器来检查图像构建过程。
