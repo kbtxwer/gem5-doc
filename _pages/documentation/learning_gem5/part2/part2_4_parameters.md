@@ -1,34 +1,21 @@
 ---
 layout: documentation
-title: Adding parameters to SimObjects and more events
+title: 向 SimObjects 和更多事件添加参数
 doc: Learning gem5
 parent: part2
 permalink: /documentation/learning_gem5/part2/parameters/
 author: Jason Lowe-Power
 ---
 
+# 向 SimObjects 和更多事件添加参数
 
-Adding parameters to SimObjects and more events
-===============================================
+gem5 的 Python 接口最强大的部分之一是能够将参数从 Python 传递到 gem5 中的 C++ 对象。在本章，我们将研究几种SimObject参数以及如何利用它们继续构建[前面章节](../helloobject/)的`HelloObject`。
 
-One of the most powerful parts of gem5's Python interface is the ability
-to pass parameters from Python to the C++ objects in gem5. In this
-chapter, we will explore some of the kinds of parameters for SimObjects
-and how to use them building off of the simple `HelloObject` from the
-[previous chapters](http://www.gem5.org/documentation/learning_gem5/part2/helloobject/).
+## 简单参数
 
-Simple parameters
------------------
+首先，我们在`HelloObject`中为延迟和触发事件的次数添加参数。要添加参数，请修改SimObject Python 文件 ( `src/learning_gem5/part2/HelloObject.py`) 中的`HelloObject`类。通过向包含`Param`类型的 Python 类添加新语句来设置参数。
 
-First, we will add parameters for the latency and number of times to
-fire the event in the `HelloObject`. To add a parameter, modify the
-`HelloObject` class in the SimObject Python file
-(`src/learning_gem5/part2/HelloObject.py`). Parameters are set by adding new
-statements to the Python class that include a `Param` type.
-
-For instance, the following code has a parameter `time_to_wait` which is
-a "Latency" parameter and `number_of_fires` which is an integer
-parameter.
+例如，下面的代码有一个参数`time_to_wait`，它是一个“延迟”参数，`number_of_fires`它是一个整数参数。
 
 ```python
 class HelloObject(SimObject):
@@ -40,32 +27,15 @@ class HelloObject(SimObject):
                                    "goodbye")
 ```
 
-`Param.<TypeName>` declares a parameter of type `TypeName`. Common types
-are `Int` for integers, `Float` for floats, etc. These types act like
-regular Python classes.
+`Param.<TypeName>`声明一个类型为`TypeName`的参数。常见类型`Int`是整数、`Float`是浮点数等。这些类型的行为类似于常规 Python 类。
 
-Each parameter declaration takes one or two parameters. When given two
-parameters (like `number_of_fires` above), the first parameter is the
-*default value* for the parameter. In this case, if you instantiate a
-`HelloObject` in your Python config file without specifying any value
-for number\_of\_fires, it will take the default value of 1.
+每个参数声明采用一个或两个参数。当给定两个参数时（如`number_of_fires`），第一个是参数的 *默认值*。在这种情况下，如果您在 Python 配置文件中实例化`HelloObject`而没有为 `number_of_fires` 指定任何值，它将采用默认值 1。
 
-The second parameter to the parameter declaration is a short description
-of the parameter. This must be a Python string. If you only specify a
-single parameter to the parameter declaration, it is the description (as
-for `time_to_wait`).
+参数声明的第二个参数是对参数的`简短描述`。这必须是 Python 字符串。如果您只为参数声明指定一个参数，则它是描述（如`time_to_wait`）。
 
-gem5 also supports many complex parameter types that are not just
-builtin types. For instance, `time_to_wait` is a `Latency`. `Latency`
-takes a value as a time value as a string and converts it into simulator
-**ticks**. For instance, with a default tick rate of 1 picosecond
-(10\^12 ticks per second or 1 THz), `"1ns"` is automatically converted
-to 1000. There are other convenience parameters like `Percent`,
-`Cycles`, `MemorySize` and many more.
+gem5 还支持许多复杂的参数类型，而不仅仅是内置类型。例如，`time_to_wait`是一个`Latency`。`Latency` 将一个值作为时间值的字符串并将其转换为模拟器的时钟周期数（**ticks**）。例如，具有1皮秒（每秒 1 THz 或 10^12^ ticks）的缺省tick速率，`"1ns"`自动转换至1000。还有其他便利的参数，如`Percent`， `Cycles`，`MemorySize`等等。
 
-Once you have declared these parameters in the SimObject file, you need
-to copy their values to your C++ class in its constructor. The following
-code shows the changes to the `HelloObject` constructor.
+在 SimObject 文件中声明这些参数后，您需要将它们的值复制到 C++ 类的构造函数中。以下代码显示了对`HelloObject`构造函数的更改。
 
 ```cpp
 HelloObject::HelloObject(const HelloObjectParams &params) :
@@ -79,19 +49,11 @@ HelloObject::HelloObject(const HelloObjectParams &params) :
 }
 ```
 
-Here, we use the parameter's values for the default values of latency
-and timesLeft. Additionally, we store the `name` from the parameter
-object to use it later in the member variable `myName`. Each `params`
-instantiation has a name which comes from the Python config file when it
-is instantiated.
+在这里，我们使用参数的值作为延迟和时间的默认值。此外，我们存储来自参数对象的`name` ，以便稍后在成员变量`myName`中使用它。每个`params` 实例化都有一个名称，该名称来自实例化时的 Python 配置文件。
 
-However, assigning the name here is just an example of using the params
-object. For all SimObjects, there is a `name()` function that always
-returns the name. Thus, there is never a need to store the name like
-above.
+但是，此处分配名称只是使用 params 对象的一个示例。对于所有 SimObjects，都有一个`name()`函数总是返回名称。因此，永远不需要像上面那样存储名称。
 
-To the HelloObject class declaration, add a member variable for the
-name.
+在 HelloObject 类声明中，为名称添加一个成员变量。
 
 ```cpp
 class HelloObject : public SimObject
@@ -101,7 +63,7 @@ class HelloObject : public SimObject
 
     EventWrapper event;
 
-    const std::string myName;
+    const std::string myName;//为名称添加的成员变量
 
     const Tick latency;
 
@@ -114,68 +76,61 @@ class HelloObject : public SimObject
 };
 ```
 
-When we run gem5 with the above, we get the following error:
+当我们用上面的代码运行 gem5 时，我们得到以下错误：
 
-    gem5 Simulator System.  http://gem5.org
-    gem5 is copyrighted software; use the --copyright option for details.
+```bash
+gem5 Simulator System.  http://gem5.org
+gem5 is copyrighted software; use the --copyright option for details.
 
-    gem5 compiled Jan  4 2017 14:46:36
-    gem5 started Jan  4 2017 14:46:52
-    gem5 executing on chinook, pid 3422
-    command line: build/X86/gem5.opt --debug-flags=Hello configs/learning_gem5/part2/run_hello.py
+gem5 compiled Jan  4 2017 14:46:36
+gem5 started Jan  4 2017 14:46:52
+gem5 executing on chinook, pid 3422
+command line: build/X86/gem5.opt --debug-flags=Hello configs/learning_gem5/part2/run_hello.py
 
-    Global frequency set at 1000000000000 ticks per second
-    fatal: hello.time_to_wait without default or user set value
+Global frequency set at 1000000000000 ticks per second
+fatal: hello.time_to_wait without default or user set value
+```
 
-This is because the `time_to_wait` parameter does not have a default
-value. Therefore, we need to update the Python config file
-(`run_hello.py`) to specify this value.
+这是因为该`time_to_wait`参数没有默认值。因此，我们需要更新 Python 配置文件 ( `run_hello.py`) 以指定此值。
 
 ```python
 root.hello = HelloObject(time_to_wait = '2us')
 ```
 
-Or, we can specify `time_to_wait` as a member variable. Either option is
-exactly the same because the C++ objects are not created until
-`m5.instantiate()` is called.
+或者，我们可以指定`time_to_wait`为成员变量。两种做法是等价的，因为 C++ 对象在`m5.instantiate()`被调用之前不会被创建 。
 
 ```python
 root.hello = HelloObject()
 root.hello.time_to_wait = '2us'
 ```
 
-The output of this simple script is the following when running the the
-`Hello` debug flag.
+附加`Hello`调试标志运行时，这个简单脚本的输出如下 。
 
-    gem5 Simulator System.  http://gem5.org
-    gem5 is copyrighted software; use the --copyright option for details.
+```bash
+gem5 Simulator System.  http://gem5.org
+gem5 is copyrighted software; use the --copyright option for details.
 
-    gem5 compiled Jan  4 2017 14:46:36
-    gem5 started Jan  4 2017 14:50:08
-    gem5 executing on chinook, pid 3455
-    command line: build/X86/gem5.opt --debug-flags=Hello configs/learning_gem5/part2/run_hello.py
+gem5 compiled Jan  4 2017 14:46:36
+gem5 started Jan  4 2017 14:50:08
+gem5 executing on chinook, pid 3455
+command line: build/X86/gem5.opt --debug-flags=Hello configs/learning_gem5/part2/run_hello.py
 
-    Global frequency set at 1000000000000 ticks per second
-          0: hello: Created the hello object with the name hello
-    Beginning simulation!
-    info: Entering event queue @ 0.  Starting simulation...
-    2000000: hello: Hello world! Processing the event! 0 left
-    2000000: hello: Done firing!
-    Exiting @ tick 18446744073709551615 because simulate() limit reached
+Global frequency set at 1000000000000 ticks per second
+      0: hello: Created the hello object with the name hello
+Beginning simulation!
+info: Entering event queue @ 0.  Starting simulation...
+2000000: hello: Hello world! Processing the event! 0 left
+2000000: hello: Done firing!
+Exiting @ tick 18446744073709551615 because simulate() limit reached
+```
 
-You can also modify the config script to fire the event multiple times.
+您还可以修改配置脚本以多次触发事件。
 
-Other SimObjects as parameters
-------------------------------
+## 其他 SimObjects 作为参数
 
-You can also specify other SimObjects as parameters. To demonstrate
-this, we are going to create a new SimObject, `GoodbyeObject`. This
-object is going to have a simple function that says "Goodbye" to another
-SimObject. To make it a little more interesting, the `GoodbyeObject` is
-going to have a buffer to write the message, and a limited bandwidth to
-write the message.
+您还可以指定其他 SimObject 作为参数。为了证明这一点，我们将创建一个新的SimObject， `GoodbyeObject`。这个对象将有一个简单的函数，对另一个 SimObject 说“再见”。为了让它更有趣一点，`GoodbyeObject`将有一个缓冲区来写入消息，并有一个有限的带宽来写入消息。
 
-First, declare the SimObject in the SConscript file:
+首先，在 SConscript 文件中声明 SimObject：
 
 ```python
 Import('*')
@@ -187,18 +142,9 @@ Source('goodbye_object.cc')
 DebugFlag('Hello')
 ```
 
-The new SConscript file can be downloaded
-[here](/_pages/static/scripts/part2/parameters/SConscript).
+可以在[此处](/gem5-doc/_pages/static/scripts/part2/parameters/SConscript)下载新的 SConscript 文件 。
 
-Next, you need to declare the new SimObject in a SimObject Python file.
-Since the `GoodbyeObject` is highly related to the `HelloObject`, we
-will use the same file. You can add the following code to
-`HelloObject.py`.
-
-This object has two parameters, both with default values. The first
-parameter is the size of a buffer and is a `MemorySize` parameter.
-Second is the `write_bandwidth` which specifies the speed to fill the
-buffer. Once the buffer is full, the simulation will exit.
+接下来，您需要在 SimObject Python 文件中声明新的 SimObject。由于`GoodbyeObject`与`HelloObject`高度相关，我们将使用相同的文件。您可以将以下代码添加到 `HelloObject.py`.
 
 ```python
 class GoodbyeObject(SimObject):
@@ -211,10 +157,11 @@ class GoodbyeObject(SimObject):
                                             "the buffer")
 ```
 
-The updated `HelloObject.py` file can be downloaded
-[here](/_pages/static/scripts/part2/parameters/HelloObject.py).
+这个对象有两个参数，都有默认值。第一个参数是缓冲区的大小，是一个`MemorySize`参数。其次是`write_bandwidth`指定填充缓冲区的速度。一旦缓冲区已满，模拟将退出。
 
-Now, we need to implement the `GoodbyeObject`.
+更新后的`HelloObject.py`文件可以在[这里](/gem5-doc/_pages/static/scripts/part2/parameters/HelloObject.py)下载 。
+
+现在，我们需要实现`GoodbyeObject`.
 
 ```cpp
 #ifndef __LEARNING_GEM5_GOODBYE_OBJECT_HH__
@@ -339,37 +286,19 @@ GoodbyeObjectParams::create()
 }
 ```
 
-The header file can be downloaded
-[here](/_pages/static/scripts/part2/parameters/goodbye_object.hh) and the
-implementation can be downloaded
-[here](/_pages/static/scripts/part2/parameters/goodbye_object.cc).
+头文件可以在[这里](/gem5-doc/_pages/static/scripts/part2/parameters/goodbye_object.hh)下载 ，实现可以在[这里](/gem5-doc/_pages/static/scripts/part2/parameters/goodbye_object.cc)下载 。
 
-The interface to this `GoodbyeObject` is simple a function `sayGoodbye`
-which takes a string as a parameter. When this function is called, the
-simulator builds the message and saves it in a member variable. Then, we
-begin filling the buffer.
+`GoodbyeObject`的接口是一个简单的`sayGoodbye`函数 ，它将一个字符串作为参数。调用此函数时，模拟器会构建消息并将其保存在成员变量中。然后，我们开始填充缓冲区。
 
-To model the limited bandwidth, each time we write the message to the
-buffer, we pause for the latency it takes to write the message. We use a
-simple event to model this pause.
+为了对有限的带宽进行建模，每次我们将消息写入缓冲区时，我们都会暂停写入消息所需的延迟。我们使用一个简单的事件来模拟这个暂停。
 
-Since we used a `MemoryBandwidth` parameter in the SimObject
-declaration, the `bandwidth` variable is automatically converted into
-ticks per byte, so calculating the latency is simply the bandwidth times
-the bytes we want to write the buffer.
+由于我们在 SimObject 声明中使用了一个`MemoryBandwidth`参数，`bandwidth`变量会自动转换为每字节读写的tick数，因此计算延迟只是带宽乘以我们想要写入缓冲区的字节数。
 
-Finally, when the buffer is full, we call the function `exitSimLoop`,
-which will exit the simulation. This function takes three parameters,
-the first is the message to return to the Python config script
-(`exit_event.getCause()`), the second is the exit code, and the third is
-when to exit.
+最后，当缓冲区已满时，我们调用函数`exitSimLoop`，它将退出模拟。这个函数有三个参数，第一个是返回Python配置脚本的消息（`exit_event.getCause()`），第二个是退出代码，第三个是什么时候退出。
 
-### Adding the GoodbyeObject as a parameter to the HelloObject
+### 将 GoodbyeObject 作为参数添加到 HelloObject
 
-First, we will also add a `GoodbyeObject` as a parameter to the
-`HelloObject`. To do this, you simply specify the SimObject class name
-as the `TypeName` of the `Param`. You can have a default, or not, just
-like a normal parameter.
+首先，我们将`GoodbyeObject`作为参数添加到 `HelloObject`. 要做到这一点，你只需指定SimObject类名作为`TypeName`的`Param`。您可以有一个默认值，也可以没有，就像普通参数一样。
 
 ```python
 class HelloObject(SimObject):
@@ -380,15 +309,12 @@ class HelloObject(SimObject):
     number_of_fires = Param.Int(1, "Number of times to fire the event before "
                                    "goodbye")
 
-    goodbye_object = Param.GoodbyeObject("A goodbye object")
+    goodbye_object = Param.GoodbyeObject("A goodbye object") # 添加GoodbyeObject
 ```
 
-The updated `HelloObject.py` file can be downloaded
-[here](/_pages/static/scripts/part2/parameters/HelloObject.py).
+更新后的`HelloObject.py`文件可以在[这里](/gem5-doc/_pages/static/scripts/part2/parameters/HelloObject.py)下载 。
 
-Second, we will add a reference to a `GoodbyeObject` to the
-`HelloObject` class.
-Don't forget to include goodbye_object.hh at the top of the hello_object.hh file!
+其次，我们会添加`GoodbyeObject`的引用到 `HelloObject`类。不要忘记在 `hello_object.hh` 文件的顶部包含 `goodbye_object.hh`！
 
 ```cpp
 #include <string>
@@ -423,12 +349,7 @@ class HelloObject : public SimObject
 };
 ```
 
-Then, we need to update the constructor and the process event function
-of the `HelloObject`. We also add a check in the constructor to make
-sure the `goodbye` pointer is valid. It is possible to pass a null
-pointer as a SimObject via the parameters by using the `NULL` special
-Python SimObject. We should *panic* when this happens since it is not a
-case this object has been coded to accept.
+然后，我们需要更新`HelloObject`的构造函数和事件处理函数。 我们还在构造函数中添加了检查以确保`goodbye`指针有效。当`goodbye`指针为空时我们应该*抛出panic()*，因为这个对象不是被编码和接受的。
 
 ```cpp
 #include "learning_gem5/part2/hello_object.hh"
@@ -449,8 +370,7 @@ HelloObject::HelloObject(HelloObjectParams &params) :
 }
 ```
 
-Once we have processed the number of event specified by the parameter,
-we should call the `sayGoodbye` function in the `GoodbyeObject`.
+一旦我们处理事件的次数达到参数指定值，我们应该调用`GoodbyeObject`的`sayGoodbye`函数。
 
 ```cpp
 void
@@ -468,17 +388,11 @@ HelloObject::processEvent()
 }
 ```
 
-You can find the updated header file
-[here](/_pages/static/scripts/part2/parameters/hello_object.hh) and the
-implementation file
-[here](/_pages/static/scripts/part2/parameters/hello_object.cc).
+你可以找到更新的头文件 [在这里](/gem5-doc/_pages/static/scripts/part2/parameters/hello_object.hh)和实现文件 [在这里](/gem5-doc/_pages/static/scripts/part2/parameters/hello_object.cc)。
 
-### Updating the config script
+### 更新配置脚本
 
-Lastly, we need to add the `GoodbyeObject` to the config script. Create
-a new config script, `hello_goodbye.py` and instantiate both the hello
-and the goodbye objects. For instance, one possible script is the
-following.
+最后，我们需要将`GoodbyeObject`加入到配置脚本中。创建一个新的配置脚本`hello_goodbye.py`并实例化 hello 和 goodbye 对象。例如，一种可能的脚本如下：
 
 ```python
 import m5
@@ -496,51 +410,47 @@ exit_event = m5.simulate()
 print('Exiting @ tick %i because %s' % (m5.curTick(), exit_event.getCause()))
 ```
 
-You can download this script
-[here](/_pages/static/scripts/part2/parameters/hello_goodbye.py).
+您可以[在此处](/gem5-doc/_pages/static/scripts/part2/parameters/hello_goodbye.py)下载此脚本 。
 
-Running this script generates the following output.
+运行此脚本会生成以下输出。
 
-    gem5 Simulator System.  http://gem5.org
-    gem5 is copyrighted software; use the --copyright option for details.
+```bash
+gem5 Simulator System.  http://gem5.org
+gem5 is copyrighted software; use the --copyright option for details.
 
-    gem5 compiled Jan  4 2017 15:17:14
-    gem5 started Jan  4 2017 15:18:41
-    gem5 executing on chinook, pid 3838
-    command line: build/X86/gem5.opt --debug-flags=Hello configs/learning_gem5/part2/hello_goodbye.py
+gem5 compiled Jan  4 2017 15:17:14
+gem5 started Jan  4 2017 15:18:41
+gem5 executing on chinook, pid 3838
+command line: build/X86/gem5.opt --debug-flags=Hello configs/learning_gem5/part2/hello_goodbye.py
 
-    Global frequency set at 1000000000000 ticks per second
-          0: hello.goodbye_object: Created the goodbye object
-          0: hello: Created the hello object
-    Beginning simulation!
-    info: Entering event queue @ 0.  Starting simulation...
-    2000000: hello: Hello world! Processing the event! 4 left
-    4000000: hello: Hello world! Processing the event! 3 left
-    6000000: hello: Hello world! Processing the event! 2 left
-    8000000: hello: Hello world! Processing the event! 1 left
-    10000000: hello: Hello world! Processing the event! 0 left
-    10000000: hello: Done firing!
-    10000000: hello.goodbye_object: Saying goodbye to hello
-    10000000: hello.goodbye_object: Scheduling another fillBuffer in 152592 ticks
-    10152592: hello.goodbye_object: Processing the event!
-    10152592: hello.goodbye_object: Scheduling another fillBuffer in 152592 ticks
-    10305184: hello.goodbye_object: Processing the event!
-    10305184: hello.goodbye_object: Scheduling another fillBuffer in 152592 ticks
-    10457776: hello.goodbye_object: Processing the event!
-    10457776: hello.goodbye_object: Scheduling another fillBuffer in 152592 ticks
-    10610368: hello.goodbye_object: Processing the event!
-    10610368: hello.goodbye_object: Scheduling another fillBuffer in 152592 ticks
-    10762960: hello.goodbye_object: Processing the event!
-    10762960: hello.goodbye_object: Scheduling another fillBuffer in 152592 ticks
-    10915552: hello.goodbye_object: Processing the event!
-    10915552: hello.goodbye_object: Goodbye done copying!
-    Exiting @ tick 10944163 because Goodbye hello!! Goodbye hello!! Goodbye hello!! Goodbye hello!! Goodbye hello!! Goodbye hello!! Goo
+Global frequency set at 1000000000000 ticks per second
+      0: hello.goodbye_object: Created the goodbye object
+      0: hello: Created the hello object
+Beginning simulation!
+info: Entering event queue @ 0.  Starting simulation...
+2000000: hello: Hello world! Processing the event! 4 left
+4000000: hello: Hello world! Processing the event! 3 left
+6000000: hello: Hello world! Processing the event! 2 left
+8000000: hello: Hello world! Processing the event! 1 left
+10000000: hello: Hello world! Processing the event! 0 left
+10000000: hello: Done firing!
+10000000: hello.goodbye_object: Saying goodbye to hello
+10000000: hello.goodbye_object: Scheduling another fillBuffer in 152592 ticks
+10152592: hello.goodbye_object: Processing the event!
+10152592: hello.goodbye_object: Scheduling another fillBuffer in 152592 ticks
+10305184: hello.goodbye_object: Processing the event!
+10305184: hello.goodbye_object: Scheduling another fillBuffer in 152592 ticks
+10457776: hello.goodbye_object: Processing the event!
+10457776: hello.goodbye_object: Scheduling another fillBuffer in 152592 ticks
+10610368: hello.goodbye_object: Processing the event!
+10610368: hello.goodbye_object: Scheduling another fillBuffer in 152592 ticks
+10762960: hello.goodbye_object: Processing the event!
+10762960: hello.goodbye_object: Scheduling another fillBuffer in 152592 ticks
+10915552: hello.goodbye_object: Processing the event!
+10915552: hello.goodbye_object: Goodbye done copying!
+Exiting @ tick 10944163 because Goodbye hello!! Goodbye hello!! Goodbye hello!! Goodbye hello!! Goodbye hello!! Goodbye hello!! Goo
+```
 
-You can modify the parameters to these two SimObjects and see how the
-overall execution time (Exiting @ tick **10944163**) changes. To run
-these tests, you may want to remove the debug flag so there is less
-output to the terminal.
+你可以修改这两个**SimObject**的参数，看看整体执行时间（Exiting **@tick 10944163**）是如何变化的。要运行这些测试，您可能需要删除调试标志，以便减少终端的输出。
 
-In the next chapters, we will create a more complex and more useful
-SimObject, culminating with a simple blocking uniprocessor cache
-implementation.
+在接下来的章节中，我们将创建一个更复杂、更有用的 SimObject，最终实现一个简单的阻塞单处理器缓存实现。

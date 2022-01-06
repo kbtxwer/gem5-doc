@@ -1,93 +1,49 @@
 ---
 layout: documentation
-title: Adding cache to configuration script
+title: 将缓存添加到配置脚本
 doc: Learning gem5
 parent: part1
 permalink: /documentation/learning_gem5/part1/cache_config/
 author: Jason Lowe-Power
 ---
 
+# 将缓存添加到配置脚本
 
-Adding cache to the configuration script
-========================================
+以[前面的配置脚本为起点](../simple_config/)，本章将逐步完成一个更复杂的配置。我们将向系统添加缓存层次结构，如下图所示。此外，本章将介绍理解 gem5 统计输出和向脚本添加命令行参数。
 
-Using the [previous configuration script as a starting point](http://www.gem5.org/documentation/learning_gem5/part1/simple_config/),
-this chapter will walk through a more complex configuration. We will add
-a cache hierarchy to the system as shown in
-the figure below. Additionally, this chapter
-will cover understanding the gem5 statistics output and adding command
-line parameters to your scripts.
+![A system configuration with a two-level cache hierarchy.](/gem5-doc/pages/static/figures/advanced_config.png)
 
-![A system configuration with a two-level cache
-hierarchy.](/pages/static/figures/advanced_config.png)
+## 创建缓存对象
 
-Creating cache objects
-----------------------
+我们将使用经典缓存，而不是 ruby-intro-chapter，因为我们正在对单个 CPU 系统进行建模并且我们不关心建模缓存一致性。我们将扩展 Cache SimObject 并为我们的系统配置它。首先，我们必须了解用于配置 Cache 对象的参数。
 
-We are going to use the classic caches, instead of ruby-intro-chapter,
-since we are modeling a single CPU system and we don't care about
-modeling cache coherence. We will extend the Cache SimObject and
-configure it for our system. First, we must understand the parameters
-that are used to configure Cache objects.
-
-> **Classic caches and Ruby**
+> **经典缓存和 Ruby**
 >
-> gem5 currently has two completely distinct subsystems to model the
-> on-chip caches in a system, the "Classic caches" and "Ruby". The
-> historical reason for this is that gem5 is a combination of m5 from
-> Michigan and GEMS from Wisconsin. GEMS used Ruby as its cache model,
-> whereas the classic caches came from the m5 codebase (hence
-> "classic"). The difference between these two models is that Ruby is
-> designed to model cache coherence in detail. Part of Ruby is SLICC, a
-> language for defining cache coherence protocols. On the other hand,
-> the classic caches implement a simplified and inflexible MOESI
-> coherence protocol.
+> gem5 目前有两个完全不同的子系统来模拟系统中的片上缓存，“经典缓存”和“Ruby”。其历史原因是 gem5 是来自密歇根州的 m5 和来自威斯康星州的 GEMS 的组合。GEMS 使用 Ruby 作为其缓存模型，而经典缓存来自 m5 代码库（因此称为“经典”）。这两种模型之间的区别在于，Ruby 旨在对缓存一致性进行详细建模。Ruby 的一部分是 SLICC，一种用于定义缓存一致性协议的语言。另一方面，经典缓存实现了简化且不灵活的 MOESI 一致性协议。
 >
-> To choose which model to use, you should ask yourself what you are
-> trying to model. If you are modeling changes to the cache coherence
-> protocol or the coherence protocol could have a first-order impact on
-> your results, use Ruby. Otherwise, if the coherence protocol isn't
-> important to you, use the classic caches.
+> 要选择要使用的模型，您应该问问自己要模拟什么。如果您正在对缓存一致性协议的更改进行建模，或者一致性协议可能对您的结果产生一级影响，请使用 Ruby。否则，如果一致性协议对您不重要，请使用经典缓存。
 >
-> A long-term goal of gem5 is to unify these two cache models into a
-> single holistic model.
+> gem5 的一个长期目标是将这两种缓存模型统一为一个整体模型。
 
-### Cache
+### 缓存
 
-The Cache SimObject declaration can be found in src/mem/cache/Cache.py.
-This Python file defines the parameters which you can set of the
-SimObject. Under the hood, when the SimObject is instantiated these
-parameters are passed to the C++ implementation of the object. The
-`Cache` SimObject inherits from the `BaseCache` object shown below.
+Cache SimObject 声明可以在 src/mem/cache/Cache.py 中找到。这个 Python 文件定义了您可以设置 SimObject 的参数。在幕后，当 SimObject 被实例化时，这些参数被传递给对象的 C++ 实现。在 `Cache`从SimObject继承`BaseCache`对象如下所示。
 
-Within the `BaseCache` class, there are a number of *parameters*. For
-instance, `assoc` is an integer parameter. Some parameters, like
-`write_buffers` have a default value, 8 in this case. The default
-parameter is the first argument to `Param.*`, unless the first argument
-is a string. The string argument of each of the parameters is a
-description of what the parameter is (e.g.,
-`tag_latency = Param.Cycles("Tag lookup latency")` means that the
-`` tag_latency `` controls "The hit latency for this cache").
+在`BaseCache`类中，有许多*参数*。例如，`assoc`是一个整数参数。一些参数，比如 `write_buffers`有一个默认值，在这种情况下是 8。默认参数是 的第一个参数`Param.*`，除非第一个参数是字符串。每个参数的字符串参数是对参数是什么的描述（例如， `tag_latency = Param.Cycles("Tag lookup latency")`意味着 `tag_latency`控制“该缓存的命中延迟”）。
 
-Many of these parameters do not have defaults, so we are required to set
-these parameters before calling `m5.instantiate()`.
+其中许多参数没有默认值，因此我们需要在调用之前设置这些参数`m5.instantiate()`。
 
-* * * * *
+------
 
-Now, to create caches with specific parameters, we are first going to
-create a new file, `caches.py`, in the same directory as simple.py,
-`configs/tutorial`. The first step is to import the SimObject(s)
-we are going to extend in this file.
+现在，要创建具有特定参数的缓存，我们首先要`caches.py`在与 simple.py 相同的目录中 创建一个新文件`configs/tutorial`。第一步是导入我们要在这个文件中扩展的 SimObject(s)。
 
-```
+```python
 from m5.objects import Cache
 ```
 
-Next, we can treat the BaseCache object just like any other Python class
-and extend it. We can name the new cache anything we want. Let's start
-by making an L1 cache.
+接下来，我们可以像对待任何其他 Python 类一样对待 BaseCache 对象并对其进行扩展。我们可以随意命名新缓存。让我们从制作 L1 缓存开始。
 
-```
+```python
 class L1Cache(Cache):
     assoc = 2
     tag_latency = 2
@@ -97,17 +53,11 @@ class L1Cache(Cache):
     tgts_per_mshr = 20
 ```
 
-Here, we are setting some of the parameters of the BaseCache that do not
-have default values. To see all of the possible configuration options,
-and to find which are required and which are optional, you have to look
-at the source code of the SimObject. In this case, we are using
-BaseCache.
+在这里，我们正在设置 BaseCache 的一些没有默认值的参数。要查看所有可能的配置选项，并找出哪些是必需的，哪些是可选的，您必须查看 SimObject 的源代码。在这种情况下，我们使用 BaseCache。
 
-We have extended `BaseCache` and set most of the parameters that do not
-have default values in the `BaseCache` SimObject. Next, let's two more
-sub-classes of L1Cache, an L1DCache and L1ICache
+我们已经扩展`BaseCache`并设置了`BaseCache`SimObject 中没有默认值的大部分参数。接下来，让我们再来两个 L1Cache 的子类，一个 L1DCache 和 L1ICache
 
-```
+```python
 class L1ICache(L1Cache):
     size = '16kB'
 
@@ -115,9 +65,9 @@ class L1DCache(L1Cache):
     size = '64kB'
 ```
 
-Let's also create an L2 cache with some reasonable parameters.
+让我们也创建一个带有一些合理参数的 L2 缓存。
 
-```
+```python
 class L2Cache(Cache):
     size = '256kB'
     assoc = 8
@@ -128,20 +78,11 @@ class L2Cache(Cache):
     tgts_per_mshr = 12
 ```
 
-Now that we have specified all of the necessary parameters required for
-`BaseCache`, all we have to do is instantiate our sub-classes and
-connect the caches to the interconnect. However, connecting lots of
-objects up to complex interconnects can make configuration files quickly
-grow and become unreadable. Therefore, let's first add some helper
-functions to our sub-classes of `Cache`. Remember, these are just Python
-classes, so we can do anything with them that you can do with a Python
-class.
+现在我们已经指定了 所需的所有必要参数 `BaseCache`，我们所要做的就是实例化我们的子类并将缓存连接到互连。但是，将大量对象连接到复杂的互连可能会使配置文件快速增长并变得不可读。因此，让我们首先为我们的子类添加一些辅助函数`Cache`。记住，这些只是 Python 类，所以我们可以用它们做任何你可以用 Python 类做的事情。
 
-To the L1 cache let's add two functions, `connectCPU` to connect a CPU
-to the cache and `connectBus` to connect the cache to a bus. We need to
-add the following code to the `L1Cache` class.
+让我们为 L1 缓存添加两个功能，`connectCPU`将 CPU 连接到缓存和`connectBus`将缓存连接到总线。我们需要将以下代码添加到`L1Cache`类中。
 
-```
+```python
 def connectCPU(self, cpu):
     # need to define this in a base class!
     raise NotImplementedError
@@ -150,11 +91,9 @@ def connectBus(self, bus):
     self.mem_side = bus.cpu_side_ports
 ```
 
-Next, we have to define a separate `connectCPU` function for the
-instruction and data caches, since the I-cache and D-cache ports have a
-different names. Our `L1ICache` and `L1DCache` classes now become:
+接下来，我们必须`connectCPU`为指令和数据缓存定义一个单独的函数，因为 I-cache 和 D-cache 端口具有不同的名称。我们的`L1ICache`和`L1DCache`类现在变成：
 
-```
+```python
 class L1ICache(L1Cache):
     size = '16kB'
 
@@ -168,10 +107,9 @@ class L1DCache(L1Cache):
         self.cpu_side = cpu.dcache_port
 ```
 
-Finally, let's add functions to the `L2Cache` to connect to the
-memory-side and CPU-side bus, respectively.
+最后，让我们添加函数以`L2Cache`分别连接到内存端和 CPU 端总线。
 
-```
+```python
 def connectCPUSideBus(self, bus):
     self.cpu_side = bus.mem_side_ports
 
@@ -179,99 +117,71 @@ def connectMemSideBus(self, bus):
     self.mem_side = bus.cpu_side_ports
 ```
 
-The full file can be found in the gem5 source at
-[`configs/learning_gem5/part1/caches.py`](https://gem5.googlesource.com/public/gem5/+/refs/heads/stable/configs/learning_gem5/part1/caches.py).
+完整的文件可以在 gem5 源文件中找到 [`configs/learning_gem5/part1/caches.py`](https://gem5.googlesource.com/public/gem5/+/refs/heads/stable/configs/learning_gem5/part1/caches.py)。
 
-Adding caches to the simple config file
-------------------------------------
+## 将缓存添加到简单的配置文件
 
-Now, let's add the caches we just created to the configuration script we
-created in the [last chapter](http://www.gem5.org/documentation/learning_gem5/part1/simple_config/).
+现在，让我们将刚刚创建的缓存添加到我们在[上一章中](../simple_config/)创建的配置脚本中。
 
-First, let's copy the script to a new name.
+首先，让我们将脚本复制到一个新名称。
 
-```
+```python
 cp ./configs/tutorial/simple.py ./configs/tutorial/two_level.py
 ```
 
-First, we need to import the names from the `caches.py` file into the
-namespace. We can add the following to the top of the file (after the
-m5.objects import), as you would with any Python source.
+首先，我们需要将`caches.py`文件中的名称导入命名空间。我们可以将以下内容添加到文件顶部（在 m5.objects 导入之后），就像使用任何 Python 源一样。
 
-```
+```python
 from caches import *
 ```
 
-Now, after creating the CPU, let's create the L1 caches:
+现在，在创建 CPU 之后，让我们创建 L1 缓存：
 
-```
+```python
 system.cpu.icache = L1ICache()
 system.cpu.dcache = L1DCache()
 ```
 
-And connect the caches to the CPU ports with the helper function we
-created.
+并使用我们创建的辅助函数将缓存连接到 CPU 端口。
 
-```
+```python
 system.cpu.icache.connectCPU(system.cpu)
 system.cpu.dcache.connectCPU(system.cpu)
 ```
 
-You need to *remove* the following two lines which connected the cache
-ports directly to the memory bus.
+您需要*删除*将缓存端口直接连接到内存总线的以下两行。
 
-```
+```python
 system.cpu.icache_port = system.membus.cpu_side_ports
 system.cpu.dcache_port = system.membus.cpu_side_ports
 ```
 
-We can't directly connect the L1 caches to the L2 cache since the L2
-cache only expects a single port to connect to it. Therefore, we need to
-create an L2 bus to connect our L1 caches to the L2 cache. The, we can
-use our helper function to connect the L1 caches to the L2 bus.
+我们不能直接将 L1 缓存连接到 L2 缓存，因为 L2 缓存只需要一个端口连接到它。因此，我们需要创建一个 L2 总线来将我们的 L1 缓存连接到 L2 缓存。我们可以使用我们的辅助函数将 L1 缓存连接到 L2 总线。
 
-```
+```python
 system.l2bus = L2XBar()
 
 system.cpu.icache.connectBus(system.l2bus)
 system.cpu.dcache.connectBus(system.l2bus)
 ```
 
-Next, we can create our L2 cache and connect it to the L2 bus and the
-memory bus.
+接下来，我们可以创建 L2 缓存并将其连接到 L2 总线和内存总线。
 
-```
+```python
 system.l2cache = L2Cache()
 system.l2cache.connectCPUSideBus(system.l2bus)
 system.l2cache.connectMemSideBus(system.membus)
 ```
 
-Everything else in the file stays the same! Now we have a complete
-configuration with a two-level cache hierarchy. If you run the current
-file, `hello` should now finish in 57467000 ticks. The full script can
-be found in the gem5 source at
-[`configs/learning_gem5/part1/two_level.py](https://gem5.googlesource.com/public/gem5/+/refs/heads/stable/configs/learning_gem5/part1/two_level.py).
+文件中的其他所有内容都保持不变！现在我们有了一个带有两级缓存层次结构的完整配置。如果您运行当前文件，`hello`现在应该在 57467000 个滴答后完成。完整的脚本可以在[`configs/learning_gem5/part1/two_level.py](https://gem5.googlesource.com/public/gem5/+/refs/heads/stable/configs/learning_gem5/part1/two_level.py)的 gem5 源代码中 [找到](https://gem5.googlesource.com/public/gem5/+/refs/heads/stable/configs/learning_gem5/part1/two_level.py)。
 
-Adding parameters to your script
---------------------------------
+## 向脚本添加参数
 
-When performing experiments with gem5, you don't want to edit your
-configuration script every time you want to test the system with
-different parameters. To get around this, you can add command-line
-parameters to your gem5 configuration script. Again, because the
-configuration script is just Python, you can use the Python libraries
-that support argument parsing. Although pyoptparse is officially
-deprecated, many of the configuration scripts that ship with gem5 use it
-instead of pyargparse since gem5's minimum Python version used to be
-2.5. The minimum Python version is now 3.6, so Python's argparse is a better
-option when writing new scripts that don't need to interact with the
-current gem5 scripts. To get started using :pyoptparse, you can consult
-the online Python documentation.
+使用 gem5 进行实验时，您不希望每次要使用不同参数测试系统时都编辑配置脚本。为了解决这个问题，您可以将命令行参数添加到您的 gem5 配置脚本中。同样，因为配置脚本只是 Python，所以您可以使用支持参数解析的 Python 库。尽管 pyoptparse 已被正式弃用，但 gem5 附带的许多配置脚本都使用它而不是 pyargparse，因为 gem5 的最低 Python 版本曾经是 2.5。Python 的最低版本现在是 3.6，因此在编写不需要与当前 gem5 脚本交互的新脚本时，Python 的 argparse 是更好的选择。要开始使用 :pyoptparse，您可以查阅在线 Python 文档。
 
-To add options to our two-level cache configuration, after importing our
-caches, let's add some options.
+要为我们的两级缓存配置添加选项，在导入我们的缓存后，让我们添加一些选项。
 
-```
+```python
 import argparse
 
 parser = argparse.ArgumentParser(description='A simple system with 2-level cache.')
@@ -287,46 +197,28 @@ parser.add\_argument("--l2_size",
 options = parser.parse\_args()
 ```
 
-Now, you can run
-`build/X86/gem5.opt configs/tutorial/two_level.py --help` which
-will display the options you just added.
+现在，您可以运行 `build/X86/gem5.opt configs/tutorial/two_level.py --help`它将显示您刚刚添加的选项。
 
-Next, we need to pass these options onto the caches that we create in
-the configuration script. To do this, we'll simply change two\_level\_opts.py
-to pass the options into the caches as a parameter to their constructor
-and add an appropriate constructor, next.
+接下来，我们需要将这些选项传递给我们在配置脚本中创建的缓存。为此，我们将简单地更改 two_level_opts.py 以将选项作为参数传递到缓存中，然后添加一个适当的构造函数。
 
-```
+```python
 system.cpu.icache = L1ICache(options)
 system.cpu.dcache = L1DCache(options)
 ...
 system.l2cache = L2Cache(options)
 ```
 
-In caches.py, we need to add constructors (`__init__` functions in
-Python) to each of our classes. Starting with our base L1 cache, we'll
-just add an empty constructor since we don't have any parameters which
-apply to the base L1 cache. However, we can't forget to call the super
-class's constructor in this case. If the call to the super class
-constructor is skipped, gem5's SimObject attribute finding function will
-fail and the result will be
-"`RuntimeError: maximum recursion depth exceeded`" when you try to
-instantiate the cache object. So, in `L1Cache` we need to add the
-following after the static class members.
+在 caches.py 中，我们需要`__init__`为每个类添加构造函数（Python 中的函数）。从我们的基础 L1 缓存开始，我们将只添加一个空的构造函数，因为我们没有任何适用于基础 L1 缓存的参数。但是，在这种情况下我们不能忘记调用超类的构造函数。如果跳过对超类构造函数的调用，gem5 的 SimObject 属性查找函数将失败，`RuntimeError: maximum recursion depth exceeded`当您尝试实例化缓存对象时，结果将是“ ”。因此，`L1Cache`我们需要在静态类成员之后添加以下内容。
 
-```
+```python
 def __init__(self, options=None):
     super(L1Cache, self).__init__()
     pass
 ```
 
-Next, in the `L1ICache`, we need to use the option that we created
-(`l1i_size`) to set the size. In the following code, there is guards for
-if `options` is not passed to the `L1ICache` constructor and if no
-option was specified on the command line. In these cases, we'll just use
-the default we've already specified for the size.
+接下来，在 中`L1ICache`，我们需要使用我们创建的选项 ( `l1i_size`) 来设置大小。在下面的代码中，如果`options`没有传递给`L1ICache`构造函数，并且在命令行上没有指定选项，则存在保护。在这些情况下，我们将只使用我们已经为大小指定的默认值。
 
-```
+```python
 def __init__(self, options=None):
     super(L1ICache, self).__init__(options)
     if not options or not options.l1i_size:
@@ -334,9 +226,9 @@ def __init__(self, options=None):
     self.size = options.l1i_size
 ```
 
-We can use the same code for the `L1DCache`:
+我们可以使用相同的代码`L1DCache`：
 
-```
+```python
 def __init__(self, options=None):
     super(L1DCache, self).__init__(options)
     if not options or not options.l1d_size:
@@ -344,9 +236,9 @@ def __init__(self, options=None):
     self.size = options.l1d_size
 ```
 
-And the unified `L2Cache`:
+和统一的`L2Cache`：
 
-```
+```python
 def __init__(self, options=None):
     super(L2Cache, self).__init__()
     if not options or not options.l2_size:
@@ -354,31 +246,27 @@ def __init__(self, options=None):
     self.size = options.l2_size
 ```
 
-With these changes, you can now pass the cache sizes into your script
-from the command line like below.
+通过这些更改，您现在可以从命令行将缓存大小传递到您的脚本中，如下所示。
 
 ```
 build/X86/gem5.opt configs/tutorial/two_level.py --l2_size='1MB' --l1d_size='128kB'
+gem5 Simulator System.  http://gem5.org
+gem5 is copyrighted software; use the --copyright option for details.
+
+gem5 version 21.0.0.0
+gem5 compiled May 17 2021 18:05:59
+gem5 started May 18 2021 00:00:33
+gem5 executing on amarillo, pid 83118
+command line: build/X86/gem5.opt configs/tutorial/two_level.py --l2_size=1MB --l1d_size=128kB
+
+Global frequency set at 1000000000000 ticks per second
+warn: No dot file generated. Please install pydot to generate the dot file and pdf.
+warn: DRAM device capacity (8192 Mbytes) does not match the address range assigned (512 Mbytes)
+0: system.remote_gdb: listening for remote gdb on port 7005
+Beginning simulation!
+info: Entering event queue @ 0.  Starting simulation...
+Hello world!
+Exiting @ tick 57467000 because exiting with last active thread context
 ```
 
-    gem5 Simulator System.  http://gem5.org
-    gem5 is copyrighted software; use the --copyright option for details.
-
-    gem5 version 21.0.0.0
-    gem5 compiled May 17 2021 18:05:59
-    gem5 started May 18 2021 00:00:33
-    gem5 executing on amarillo, pid 83118
-    command line: build/X86/gem5.opt configs/tutorial/two_level.py --l2_size=1MB --l1d_size=128kB
-
-    Global frequency set at 1000000000000 ticks per second
-    warn: No dot file generated. Please install pydot to generate the dot file and pdf.
-    warn: DRAM device capacity (8192 Mbytes) does not match the address range assigned (512 Mbytes)
-    0: system.remote_gdb: listening for remote gdb on port 7005
-    Beginning simulation!
-    info: Entering event queue @ 0.  Starting simulation...
-    Hello world!
-    Exiting @ tick 57467000 because exiting with last active thread context
-
-The full scripts can be found in the gem5 source at
-[`configs/learning_gem5/part1/caches.py`](https://gem5.googlesource.com/public/gem5/+/refs/heads/stable/configs/learning_gem5/part1/caches.py) and
-[`configs/learning_gem5/part1/two_level.py`](https://gem5.googlesource.com/public/gem5/+/refs/heads/stable/configs/learning_gem5/part1/two_level.py).
+完整的脚本可以在gem5找到 [`configs/learning_gem5/part1/caches.py`](https://gem5.googlesource.com/public/gem5/+/refs/heads/stable/configs/learning_gem5/part1/caches.py)和 [`configs/learning_gem5/part1/two_level.py`](https://gem5.googlesource.com/public/gem5/+/refs/heads/stable/configs/learning_gem5/part1/two_level.py)。

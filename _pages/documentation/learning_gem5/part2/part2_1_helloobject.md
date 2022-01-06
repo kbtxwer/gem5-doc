@@ -1,68 +1,39 @@
 ---
 layout: documentation
-title: Creating a very simple SimObject
+title: 创建一个非常简单的 SimObject
 doc: Learning gem5
 parent: part2
 permalink: /documentation/learning_gem5/part2/helloobject/
 author: Jason Lowe-Power
 ---
 
+# 创建一个*非常*简单的 SimObject
 
-Creating a *very* simple SimObject
-==================================
+**注意**：gem5 的已经有一个 名为`SimpleObject`的 SimObject子类. 实现另一个 `SimpleObject将导致二义性问题。
 
-**Note**: gem5 has SimObject named `SimpleObject`. Implementing another
-`SimpleObject` SimObject will result in confusing compiler issues.
+gem5 中的几乎所有对象都继承自基本 SimObject 类型。SimObjects 将主要接口导出到 gem5 中的所有对象。SimObjects 是可从`Python` 配置脚本访问的`C++`包装对象。
 
-Almost all objects in gem5 inherit from the base SimObject type.
-SimObjects export the main interfaces to all objects in gem5. SimObjects
-are wrapped `C++` objects that are accessible from the `Python`
-configuration scripts.
+SimObjects 可以有很多参数，这些参数是通过`Python` 配置文件设置的。除了像整数和浮点数这样的简单参数外，它们还可以将其他 SimObjects 作为参数。这允许您创建复杂的系统层次结构，就像真实机器一样。
 
-SimObjects can have many parameters, which are set via the `Python`
-configuration files. In addition to simple parameters like integers and
-floating point numbers, they can also have other SimObjects as
-parameters. This allows you to create complex system hierarchies, like
-real machines.
+在本章中，我们将逐步创建一个简单的“HelloWorld” SimObject。目标是向您介绍 SimObjects 的创建方式以及所有 SimObjects 所需的样板代码。我们还将创建一个简单的`Python`配置脚本来实例化我们的 SimObject。
 
-In this chapter, we will walk through creating a simple "HelloWorld"
-SimObject. The goal is to introduce you to how SimObjects are created
-and the required boilerplate code for all SimObjects. We will also
-create a simple `Python` configuration script which instantiates our
-SimObject.
+在接下来的几章中，我们将对其进行扩展，以引入[调试支持](../debugging)、[动态事件](../events)和[参数](../parameters)。
 
-In the next few chapters, we will take this simple SimObject and expand
-on it to include [debugging support](../debugging), [dynamic
-events](../events), and [parameters](../parameters).
+**使用 git 分支**
 
-> **Using git branches**
->
-> It is common to use a new git branch for each new feature you add to
-> gem5.
->
-> The first step when adding a new feature or modifying something in
-> gem5, is to create a new branch to store your changes. Details on git
-> branches can be found in the Git book.
->
-> ```
-> git checkout -b hello-simobject
-> ```
+为每个添加到 gem5 的新功能使用一个新的 git 分支是很常见的。
 
-Step 1: Create a Python class for your new SimObject
-----------------------------------------------------
+在 gem5 中添加新功能或修改某些内容时，第一步是创建一个新分支来存储您的更改。关于 git 分支的详细信息可以在 Git 书中找到。
 
-Each SimObject has a Python class which is associated with it. This
-Python class describes the parameters of your SimObject that can be
-controlled from the Python configuration files. For our simple
-SimObject, we are just going to start out with no parameters. Thus, we
-simply need to declare a new class for our SimObject and set it's name
-and the C++ header that will define the C++ class for the SimObject.
+ ```bash
+ git checkout -b hello-simobject
+ ```
 
-We can create a file, `HelloObject.py`, in `src/learning_gem5/part2`.
-If you have cloned the gem5 repository you'll have the files mentioned
-in this tutorial completed under `src/learning_gem5/part2` and
-`configs/learning_gem5/part2`. You can delete these or move them
-elsewhere to follow this tutorial.
+## 第 1 步：为您的新 SimObject 创建一个 Python 类
+
+每个 SimObject 都有一个与之关联的 Python 类。这个 Python 类描述了可以从 Python 配置文件控制的 SimObject 的参数。我们从没有参数的情况下开始配置我们的简单 SimObject。因此，我们只需要为我们的 SimObject 声明一个新类，并设置它的名称和 C++ 头文件，为 SimObject 定义 C++ 类。
+
+我们可以在`src/learning_gem5/part2`创建`HelloObject.py`. 如果您已经克隆了 gem5 存储库，您将在`src/learning_gem5/part2`和`configs/learning_gem5/part2`下完成本教程中提到的文件。您可以删除这些或将它们移动到其他地方以遵循本教程。
 
 ```python
 from m5.params import *
@@ -73,46 +44,23 @@ class HelloObject(SimObject):
     cxx_header = "learning_gem5/part2/hello_object.hh"
 ```
 
-[//]: # You can find the complete file
-[//]: # [here](/_static/scripts/part2/helloobject/HelloObject.py)
+不要求`type`与类的名称相同，但这是约定。`type`是您使用此 Python SimObject 包装的 C++ 类。只有在特殊情况下 `type`和类名才应该不同。
 
-It is not required that the `type` be the same as the name of the class,
-but it is convention. The `type` is the C++ class that you are wrapping
-with this Python SimObject. Only in special circumstances should the
-`type` and the class name be different.
+`cxx_header`是包含用作类的声明文件中`type`的参数。同样，约定是使用所有小写和下划线的 SimObject 名称，但这只是约定。您可以在此处指定任何头文件。
 
-The `cxx_header` is the file that contains the declaration of the class
-used as the `type` parameter. Again, the convention is to use the name
-of the SimObject with all lowercase and underscores, but this is only
-convention. You can specify any header file here.
+## 第 2 步：在 C++ 中实现您的 SimObject
 
-Step 2: Implement your SimObject in C++
----------------------------------------
+接下来，我们需要在 `src/learning_gem5/part2/`创建`hello_object.hh`和`hello_object.cc`，以实现`HelloObject`。
 
-Next, we need to create `hello_object.hh` and `hello_object.cc` in
-`src/learning_gem5/part2/` directory which will implement the `HelloObject`.
+我们将从`C++`对象的头文件开始。按照惯例，gem5 将所有头文件内容写在以文件名及其所在目录命名的`#ifndef/#endif`宏定义之间，防止循环包含。
 
-We'll start with the header file for our `C++` object. By convention,
-gem5 wraps all header files in `#ifndef/#endif` with the name of the
-file and the directory its in so there are no circular includes.
+我们需要在文件中做的唯一一件事就是声明我们的类。由于 `HelloObject`是 SimObject，它必须从 C++ SimObject 类继承。大多数情况下，您的 SimObject 将继承自 SimObject 的实现类，而不是 SimObject 本身。
 
-The only thing we need to do in the file is to declare our class. Since
-`HelloObject` is a SimObject, it must inherit from the C++ SimObject
-class. Most of the time, your SimObject's parent will be a subclass of
-SimObject, not SimObject itself.
+SimObject 类指定了许多虚函数。但是，这些函数都不是纯虚函数，所以在最简单的情况下，除了构造函数之外，不需要实现任何函数。
 
-The SimObject class specifies many virtual functions. However, none of
-these functions are pure virtual, so in the simplest case, there is no
-need to implement any functions except for the constructor.
+所有 SimObjects 的构造函数都假定它将接受一个参数对象。这个参数对象是由构建系统自动创建的，并且基于SimObject的`Python`类，就像我们上面创建的那个。此参数类型的名称是**根据对象名称自动生成的**。对于我们的“HelloObject”，参数类型的名称是“HelloObjectParams”。
 
-The constructor for all SimObjects assumes it will take a parameter
-object. This parameter object is automatically created by the build
-system and is based on the `Python` class for the SimObject, like the
-one we created above. The name for this parameter type is generated
-automatically from the name of your object. For our "HelloObject" the
-parameter type's name is "HelloObjectParams".
-
-The code required for our simple header file is listed below.
+下面列出了我们的简单头文件所需的代码。
 
 ```cpp
 #ifndef __LEARNING_GEM5_HELLO_OBJECT_HH__
@@ -130,18 +78,9 @@ class HelloObject : public SimObject
 #endif // __LEARNING_GEM5_HELLO_OBJECT_HH__
 ```
 
-[//]: # You can find the complete file
-[//]: # [here](/_pages/static/scripts/part2/helloobject/hello_object.hh).
+接下来，我们需要在`.cc`文件中实现*两个*函数。第一个是`HelloObject`的构造函数。这里我们简单地将参数对象传递给基类并打印“Hello world!”
 
-Next, we need to implement *two* functions in the `.cc` file, not just
-one. The first function, is the constructor for the `HelloObject`. Here
-we simply pass the parameter object to the SimObject parent and print
-"Hello world!"
-
-Normally, you would **never** use `std::cout` in gem5. Instead, you
-should use debug flags. In the [next chapter](../debugging), we
-will modify this to use debug flags instead. However, for now, we'll
-simply use `std::cout` because it is simple.
+通常，您**永远不会**在 gem5 中使用`std::cout`。相反，您应该使用调试标志。在[下一章中](../debugging)，我们将修改它以使用调试标志。但是现在，我们将简单地使用`std::cout`，因为它很简洁。
 
 ```cpp
 #include "learning_gem5/part2/hello_object.hh"
@@ -155,108 +94,63 @@ HelloObject::HelloObject(const HelloObjectParams &params) :
 }
 ```
 
-**Note**: If the constructor of your SimObject follows the following
-signature,
+**注意**：您的 SimObject 的构造函数应当遵循以下签名，
 
 ```cpp
 Foo(const FooParams &)
 ```
 
-then a `FooParams::create()` method will be automatically defined. The purpose
-of the `create()` method is to call the SimObject constructor and return an
-instance of the SimObject. Most SimObject will follow this pattern; however,
-if your SimObject does not follow this pattern,
-[the gem5 SimObject documetation](http://doxygen.gem5.org/release/current/classSimObject.html#details)
-provides more information about manually implementing the `create()` method.
+然后`FooParams::create()`被自动定义。`create()`用于调用 SimObject 构造函数并返回 SimObject 的实例。大多数 SimObject 将遵循这种模式；但是，如果您的[SimObject](http://doxygen.gem5.org/release/current/classSimObject.html#details)不遵循此模式， [gem5 SimObject 文档](http://doxygen.gem5.org/release/current/classSimObject.html#details) 提供了有关手动实现该`create()`方法的更多信息。
 
+## 第 3 步：注册 SimObject 和 C++ 文件
 
-[//]: # You can find the complete file
-[//]: # [here](/_pages/static/scripts/part2/helloobject/hello_object.cc).
+为确保`C++`代码正确编译，`Python`文件正确解析，我们需要将这些文件的信息告诉构建系统。gem5 使用 SCons 作为构建系统，因此您只需在包含 SimObject 代码的目录中创建一个 SConscript 文件。如果该目录已经有一个 SConscript 文件，只需将以下声明添加到该文件中。
 
+这个文件只是一个普通的`Python`文件，所以你可以在这个文件中编写任何你想要的`Python`代码。一些脚本可能会变得非常复杂。gem5 利用这一点自动为 SimObjects 创建代码并编译为特定领域的语言，如 SLICC 和 ISA 语言。
 
-Step 3: Register the SimObject and C++ file
--------------------------------------------
+在 SConscript 文件中，有许多函数在您导入后自动定义。请参阅有关该部分的内容...
 
-In order for the `C++` file to be compiled and the `Python` file to be
-parsed we need to tell the build system about these files. gem5 uses
-SCons as the build system, so you simply have to create a SConscript
-file in the directory with the code for the SimObject. If there is
-already a SConscript file for that directory, simply add the following
-declarations to that file.
+要编译新的 SimObject，您只需在`src/learning_gem5/part2`目录中创建一个名为“SConscript”的新文件。在此文件中，您必须声明 SimObject 和`.cc`文件。下面是所需的代码。
 
-This file is simply a normal `Python` file, so you can write any
-`Python` code you want in this file. Some of the scripting can become
-quite complicated. gem5 leverages this to automatically create code for
-SimObjects and to compile the domain-specific languages like SLICC and
-the ISA language.
-
-In the SConscript file, there are a number of functions automatically
-defined after you import them. See the section on that...
-
-To get your new SimObject to compile, you simply need to create a new
-file with the name "SConscript" in the `src/learning_gem5/part2` directory. In
-this file, you have to declare the SimObject and the `.cc` file. Below
-is the required code.
-
-```python
+```cpp
 Import('*')
 
 SimObject('HelloObject.py')
 Source('hello_object.cc')
 ```
 
-[//]: # You can find the complete file
-[//]: # [here](/_pages/static/scripts/part2/helloobject/SConscript).
+## 第 4 步：（重新）构建 gem5
 
-Step 4: (Re)-build gem5
------------------------
+要编译和链接您的新文件，您只需重新编译 gem5。下面的示例假设您使用的是 x86 ISA，但我们的对象中没有任何东西需要 ISA，因此，这将适用于任何 gem5 的 ISA。
 
-To compile and link your new files you simply need to recompile gem5.
-The below example assumes you are using the x86 ISA, but nothing in our
-object requires an ISA so, this will work with any of gem5's ISAs.
-
-```
+```bash
 scons build/X86/gem5.opt
 ```
 
-Step 5: Create the config scripts to use your new SimObject
------------------------------------------------------------
+## 第 5 步：创建配置脚本以使用您的新 SimObject
 
-Now that you have implemented a SimObject, and it has been compiled into
-gem5, you need to create or modify a `Python` config file `run_hello.py` in
-`configs/learning_gem5/part2` to instantiate your object. Since your object
-is very simple a system object is not required! CPUs are not needed, or
-caches, or anything, except a `Root` object. All gem5 instances require a
-`Root` object.
+现在，你已经实现了SimObject，它已被编译成gem5，您需要创建或修改`Python`配置文件`run_hello.py`中 `configs/learning_gem5/part2`，以实例化对象。由于您的对象非常简单，因此不需要系统对象！除了`Root`对象之外，不需要 CPU、缓存或任何东西。所有 gem5 实例都需要一个 `Root`对象。
 
-Walking through creating a *very* simple configuration script, first,
-import m5 and all of the objects you have compiled.
+创建一个*非常*简单的配置脚本，首先，导入 m5 和您编译的所有对象。
 
 ```python
 import m5
 from m5.objects import *
 ```
 
-Next, you have to instantiate the `Root` object, as required by all gem5
-instances.
+接下来，根据所有 gem5 实例的要求，您必须实例化`Root`对象。
 
 ```python
 root = Root(full_system = False)
 ```
 
-Now, you can instantiate the `HelloObject` you created. All you need to
-do is call the `Python` "constructor". Later, we will look at how to
-specify parameters via the `Python` constructor. In addition to creating
-an instantiation of your object, you need to make sure that it is a
-child of the root object. Only SimObjects that are children of the
-`Root` object are instantiated in `C++`.
+现在，您可以实例化您的`HelloObject`。您需要做的就是调用`Python`“构造函数”。稍后，我们将看看如何通过`Python`构造函数指定参数。除了实例化对象之外，您还需要确保它是Root的成员变量。只有作为`Root`成员的 SimObjects 才会在`C++`中实例化.
 
 ```python
 root.hello = HelloObject()
 ```
 
-Finally, you need to call `instantiate` on the `m5` module and actually
-run the simulation!
+最后，你需要调用`m5`上的`instantiate`模块运行模拟！
 
 ```python
 m5.instantiate()
@@ -267,19 +161,11 @@ print('Exiting @ tick {} because {}'
       .format(m5.curTick(), exit_event.getCause()))
 ```
 
-[//]: # You can find the complete file
-[//]: # [here](/_pages/static/scripts/part2/helloobject/run_hello.py).
+修改src/目录下的文件后记得重建gem5。运行配置文件的命令行在“command line:”后面的输出中。输出应如下所示：
 
-Remember to rebuild gem5 after modifying files in the src/ directory. The
-command line to run the config file is in the output below after
-'command line:'. The output should look something like the following:
+注意：如果后续“向 SimObjects 和更多事件添加参数”章节的代码 (goodbye_object) 在您的`src/learning_gem5/part2` 目录中，run_hello.py 将报错。如果您删除这些文件或将它们移到 gem5 目录之外，`run_hello.py`则应提供以下输出。
 
-Note: If the code for the future section "Adding parameters to SimObjects
-and more events", (goodbye_object) is in your `src/learning_gem5/part2`
-directory, run_hello.py will cause an error. If you delete those files or
-move them outside of the gem5 directory `run_hello.py` should give the output
-below.
-```
+```bash
     gem5 Simulator System.  http://gem5.org
     gem5 is copyrighted software; use the --copyright option for details.
 
@@ -294,6 +180,6 @@ below.
     info: Entering event queue @ 0.  Starting simulation...
     Exiting @ tick 18446744073709551615 because simulate() limit reached
 ```
-Congrats! You have written your first SimObject. In the next chapters,
-we will extend this SimObject and explore what you can do with
-SimObjects.
+
+恭喜！您已经编写了您的第一个 SimObject。在接下来的章节中，我们将扩展这个 SimObject 并探索您可以使用 SimObjects 做什么。
+
