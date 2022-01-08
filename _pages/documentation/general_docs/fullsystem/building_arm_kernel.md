@@ -1,84 +1,87 @@
 ---
 layout: documentation
-title: "Building ARM Kernel"
+title: "构建 ARM 内核"
 doc: gem5 documentation
 parent: fullsystem
-permalink: /documentation/general_docs/fullsystem/building_arm_kernel
+permalink: /documentation/general_docs/fullsystem/building_arm_kernel/
 ---
 
-# Building ARM Kernel
+# 构建 ARM 内核
 
-This page contains instructions for building up-to-date kernels for gem5 running on ARM. 
+此页面包含为在 ARM 上运行的 gem5 构建最新内核的说明。
 
-If you don't want to build the Kernel (or a disk image) on your own you could still [download a
-prebuilt version](./guest_binaries).
+如果您不想自己构建内核（或磁盘映像），您仍然可以[下载预构建版本](../guest_binaries)。
 
-## Prerequisites
-These instructions are for running headless systems. That is a more "server" style system where there is no frame-buffer. The description has been created using the latest known-working tag in the repositories linked below, however the tables in each section list previous tags that are known to work. To built the kernels on an x86 host you'll need ARM cross compilers and the device tree compiler. If you're running a reasonably new version of Ubuntu or Debian you can get required software through apt:
+## 先决条件
+
+这些说明用于运行 headless 系统。这是一个更“服务器”风格的系统，没有帧缓冲区。描述是使用下面链接的存储库中最新的已知工作标签创建的，但是每个部分中的表格列出了已知工作的先前标签。要在 x86 主机上构建内核，您需要 ARM 交叉编译器和设备树编译器。如果您运行的是相当新的 Ubuntu 或 Debian 版本，您可以通过 apt 获取所需的软件：
 
 ```
 apt-get install  gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu device-tree-compiler
 ```
 
-If you can't use these pre-made compilers the next easiest way to obtain the
-required compilers from ARM:
-- [Cortex A cross-compilers](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-a/downloads)
-- [Cortex RM cross-compilers](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads)
+如果您不能使用这些预制编译器，那么从 ARM 获取所需编译器的下一个方法是：
 
-Download (one of) these and make sure the binaries are on your `PATH`.
+- [Cortex A 交叉编译器](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-a/downloads)
+- [Cortex RM 交叉编译器](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads)
 
-Depending on the exact source of your cross compilers, the compiler names used below will required small changes.
+下载（其中一个）并确保二进制文件在您的`PATH`中.
 
-To actually run the kernel, you'll need to download or compile gem5's
-bootloader. See the [bootloaders](#bootloaders) section in this documents for
-details.
+根据您的交叉编译器的确切来源，下面使用的编译器名称将需要进行小的更改。
+
+要实际运行内核，您需要下载或编译 gem5 的引导加载程序。有关详细信息，请参阅本文档中的[引导加载程序](#bootloaders)部分。
 
 ## Linux 4.x
-Newer gem5 kernels for ARM (v4.x and later) are based on the vanilla Linux kernel and typically have a small number of patches to make them work better with gem5. The patches are optional and you should be able to use a vanilla kernel as well. However, this requires you to configure the kernel yourself. Newer kernels all use the VExpress\_GEM5\_V1 gem5 platform for both AArch32 and AArch64.
 
-# Kernel Checkout
-To checkout the kernel, execute the following command:
+用于 ARM 的较新 gem5 内核（v4.x 及更高版本）基于 vanilla Linux 内核，并且通常具有少量补丁以使其更好地与 gem5 配合使用。这些补丁是可选的，您也应该能够使用 vanilla 内核。但是，这需要您自己配置内核。较新的内核都为 AArch32 和 AArch64 使用 VExpress_GEM5_V1 gem5 平台。
+
+# 内核签出
+
+要签出内核，请执行以下命令：
 
 ```
 git clone https://gem5.googlesource.com/arm/linux
 ```
 
-The repository contains a tag per gem5 kernel releases and working branches for major Linux revisions. Check the [project page](https://gem5-review.googlesource.com/#/admin/projects/arm/linux) for a list of tags and branches. The clone command will, by default, check out the latest release branch. To checkout the v4.14 branch, execute the following in the repository:
+该存储库包含每个 gem5 内核版本和主要 Linux 修订版的工作分支的标签。检查[项目页面](https://gem5-review.googlesource.com/#/admin/projects/arm/linux)以获取标签和分支列表。默认情况下，克隆命令将检出最新的发布分支。要签出 v4.14 分支，请在存储库中执行以下命令：
+
 ```
 git checkout -b gem5/v4.14
 ```
 
-# Kernel build
-To compile the kernel, execute the following commands in the repository:
+# 内核构建
+
+要编译内核，请在存储库中执行以下命令：
 
 ```
 make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- gem5_defconfig
 make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- -j `nproc`
 ```
 
-Testing the just built kernel:
+测试刚刚构建的内核：
 
 ```
 ./build/ARM/gem5.opt configs/example/arm/starter_fs.py --kernel=/tmp/linux-arm-gem5/vmlinux \
     --disk-image=ubuntu-18.04-arm64-docker.img
 ```
 
-# Bootloaders
-There are two different bootloaders for gem5. One of 32-bit kernels and one for 64-bit kernels. They can be compiled using the following command:
+# 引导加载程序
+
+gem5 有两种不同的引导加载程序。一种 32 位内核，一种用于 64 位内核。可以使用以下命令编译它们：
 
 ```
 make -C system/arm/bootloader/arm
 make -C system/arm/bootloader/arm64
 ```
 
-# Device Tree Blobs
-The required DTB files to describe the hardware to the OS ship with gem5. To build them, execute this command:
+# 设备树 Blob(Device Tree Blobs)
+
+向 gem5 提供的操作系统描述硬件所需的 DTB 文件。要构建它们，请执行以下命令：
 
 ```
 make -C system/arm/dt
 ```
 
-We recommend to use these device tree files only if you are planning to amend them. If not, we recommend you to rely on DTB autogeneration: by running a FS script without the --dtb option, gem5 will automatically generate the DTB on the fly depending on the instantiated platform.
+我们建议您仅在计划修改这些设备树文件时才使用它们。如果没有，我们建议您依赖 DTB 自动生成：通过运行不带 –dtb 选项的 FS 脚本，gem5 将根据实例化平台自动动态生成 DTB。
 
-Once you have compiled the binaries, put them in the binaries directory in your
-`M5_PATH`.
+编译完二进制文件后，将它们放在 `M5_PATH`.

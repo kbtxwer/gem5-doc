@@ -1,78 +1,77 @@
 ---
 layout: toc
-title: "Guest Binaries"
-permalink: /documentation/general_docs/fullsystem/guest_binaries
+title: "预构建二进制文件"
+permalink: /documentation/general_docs/fullsystem/guest_binaries/
 author: Giacomo Travaglini
 ---
 * TOC
 {:toc}
 
-We provide a set of useful prebuilt binaries users can download (in case they don't want to
-recompile them from scratch).
+# 预构建二进制文件
 
-There are two ways of downloading them:
+我们提供了一组有用的预构建二进制文件，用户可以下载（以防他们不想从头开始重新编译）。
 
-* Via Manual Download
-* Via Google Cloud Utilities
+有两种下载方式：
 
-## Manual Download
+- 通过手动下载
+- 通过 Google Cloud 实用程序
 
-Here follows a list of prebuilt binaries to be downloaded by just clicking the link:
+## 手册下载
 
-### Arm FS Binaries
+以下是只需单击链接即可下载的预构建二进制文件列表：
 
-##### Latest Linux Kernel Image / Bootloader (**recommended**)
+### Arm FS 二进制文件
 
-The tarball below contains a set of binaries: the Linux kernel and a set of bootloaders
+##### 最新的 Linux Kernel Image / Bootloader（**推荐**）
 
-* <http://dist.gem5.org/dist/v21-1/arm/aarch-system-20210904.tar.bz2>
+下面的 tarball 包含一组二进制文件：Linux 内核和一组引导加载程序
 
-##### Latest Linux Disk Images (**recommended**)
+- http://dist.gem5.org/dist/v21-1/arm/aarch-system-20210904.tar.bz2
 
-* <http://dist.gem5.org/dist/v21-1/arm/disks/ubuntu-18.04-arm64-docker.img.bz2>
+##### 最新的 Linux 磁盘映像（**推荐**）
 
-  Partition table: yes
+- http://dist.gem5.org/dist/v21-1/arm/disks/ubuntu-18.04-arm64-docker.img.bz2
 
-  gem5 init:
-  * default (using m5 ops): `/init.gem5`
-  * kvm (using m5 --addr ops): `/init.addr.gem5`
-  * fast models (using m5 --semi ops): `/init.semi.gem5`
+  分区表：包含
 
-* <http://dist.gem5.org/dist/v21-1/arm/disks/aarch32-ubuntu-natty-headless.img.bz2>
+  gem5初始化：
 
-##### Old Linux Kernel/Disk Image
+  - 默认（使用 m5 ops）： `/init.gem5`
+  - kvm（使用 m5 –addr ops）： `/init.addr.gem5`
+  - 快速模型（使用 m5 –semi ops）： `/init.semi.gem5`
 
-These images are not supported. If you run into problems, we will do our best to help, but there is no guarantee these will work with the latest gem5 version
+- http://dist.gem5.org/dist/v21-1/arm/disks/aarch32-ubuntu-natty-headless.img.bz2
 
-###### Disk images only
+##### 旧 Linux 内核/磁盘映像
 
-* <http://dist.gem5.org/dist/current/arm/disks/aarch64-ubuntu-trusty-headless.img.bz2>
-* <http://dist.gem5.org/dist/current/arm/disks/linaro-minimal-aarch64.img.bz2>
-* <http://dist.gem5.org/dist/current/arm/disks/linux-aarch32-ael.img.bz2>
+这些映像不受支持。如果您遇到问题，我们将尽最大努力提供帮助，但不能保证它们适用于最新的 gem5 版本
 
-###### Disk and kernel images
+###### 仅磁盘映像
 
-* <http://dist.gem5.org/dist/current/arm/aarch-system-20170616.tar.xz>
-* <http://dist.gem5.org/dist/current/arm/aarch-system-20180409.tar.xz>
-* <http://dist.gem5.org/dist/current/arm/arm-system-dacapo-2011-08.tgz>
-* <http://dist.gem5.org/dist/current/arm/arm-system.tar.bz2>
-* <http://dist.gem5.org/dist/current/arm/arm64-system-02-2014.tgz>
-* <http://dist.gem5.org/dist/current/arm/kitkat-overlay.tar.bz2>
-* <http://dist.gem5.org/dist/current/arm/linux-arm-arch.tar.bz2>
-* <http://dist.gem5.org/dist/current/arm/vmlinux-emm-pcie-3.3.tar.bz2>
-* <http://dist.gem5.org/dist/current/arm/vmlinux.arm.smp.fb.3.2.tar.gz>
+- http://dist.gem5.org/dist/current/arm/disks/aarch64-ubuntu-trusty-headless.img.bz2
+- http://dist.gem5.org/dist/current/arm/disks/linaro-minimal-aarch64.img.bz2
+- http://dist.gem5.org/dist/current/arm/disks/linux-aarch32-ael.img.bz2
 
-## Google Cloud Utilities (gsutil)
+###### 磁盘和内核映像
 
-gsutil is a Python application that lets you access Cloud Storage from the command line.
-Please have a look at the following documentation which will guide you through the process
-of installing the utility
+- http://dist.gem5.org/dist/current/arm/aarch-system-20170616.tar.xz
+- http://dist.gem5.org/dist/current/arm/aarch-system-20180409.tar.xz
+- http://dist.gem5.org/dist/current/arm/arm-system-dacapo-2011-08.tgz
+- http://dist.gem5.org/dist/current/arm/arm-system.tar.bz2
+- http://dist.gem5.org/dist/current/arm/arm64-system-02-2014.tgz
+- http://dist.gem5.org/dist/current/arm/kitkat-overlay.tar.bz2
+- http://dist.gem5.org/dist/current/arm/linux-arm-arch.tar.bz2
+- http://dist.gem5.org/dist/current/arm/vmlinux-emm-pcie-3.3.tar.bz2
+- http://dist.gem5.org/dist/current/arm/vmlinux.arm.smp.fb.3.2.tar.gz
 
-* [gsutil tool](https://cloud.google.com/storage/docs/gsutil)
+## 谷歌云实用程序 (gsutil)
 
-Once installed (NOTE: It require you to provide a valid google account) it will be possible to inspect/download gem5 binaries via the following command line.
+gsutil 是一个 Python 应用程序，可让您从命令行访问 Cloud Storage。请查看以下文档，它将指导您完成安装该实用程序的过程
+
+- [gsutil 工具](https://cloud.google.com/storage/docs/gsutil)
+
+安装后（注意：它要求您提供有效的 google 帐户），可以通过以下命令行检查/下载 gem5 二进制文件。
 
 ```
 gsutil cp -r gs://dist.gem5.org/dist/<binary>
 ```
-
